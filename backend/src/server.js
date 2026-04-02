@@ -3,6 +3,7 @@ import { port } from "./services/Enviroments.service.js";
 import { mongoConnect } from "./db/config.js";
 import morgan from "morgan";
 import cors from "cors";
+import { errorHandler } from "./middleware/error.middleware.js";
 
 // importamos las rutas nuevas con metadata
 import authRoutes from "./routes/auth.routes.js";
@@ -65,3 +66,6 @@ server.use("/api", authRoutes);
 server.use("/api", userRoutes);
 server.use("/api/roles", rolesRoutes);
 server.use("/api", logsRoutes);
+
+// Middleware de manejo de errores (al final de todas las rutas)
+server.use(errorHandler);
