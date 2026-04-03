@@ -10,8 +10,24 @@ export const PERMISSIONS = {
     ROLES_CREATE: 'roles.create',
     ROLES_UPDATE: 'roles.update',
     ROLES_DELETE: 'roles.delete',
-    DASHBOARD_VIEW: 'dashboard.view',
-    DASHBOARD_STATS: 'dashboard.stats'
+    DASHBOARD_VIEW: 'dashboard.view', //permisos que estan por defecto en cualquier rol.
+    DASHBOARD_STATS: 'dashboard.stats',//permisos no estan en el frontend porque estan por defecto en cualquier rol.
+    ROOMS_READ: 'rooms.read', //nuevos permisos para los nuevos modulos,
+    ROOMS_CREATE: 'rooms.create',
+    ROOMS_UPDATE: 'rooms.update',
+    ROOMS_DELETE: 'rooms.delete',
+    RESERVATIONS_READ: 'reservations.read',
+    RESERVATIONS_CREATE: 'reservations.create',
+    RESERVATIONS_UPDATE: 'reservations.update',
+    RESERVATIONS_DELETE: 'reservations.delete',
+    PAYMENTS_READ: 'payments.read',
+    PAYMENTS_CREATE: 'payments.create',
+    PAYMENTS_UPDATE: 'payments.update',
+    PAYMENTS_DELETE: 'payments.delete',
+    HOTEL_REPORTS_READ: 'hotel_reports.read',
+    HOTEL_REPORTS_CREATE: 'hotel_reports.create',
+    HOTEL_REPORTS_UPDATE: 'hotel_reports.update',
+    HOTEL_REPORTS_DELETE: 'hotel_reports.delete',
 };
 
 export const seedRoles = async () => {
