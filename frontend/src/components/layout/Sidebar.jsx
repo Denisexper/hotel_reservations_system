@@ -1,6 +1,5 @@
 import { A, useNavigate } from '@solidjs/router';
 import { useAuth } from '../../context/AuthContext';
-import { api } from '../../services/api';
 import ThemeToggle from '../ThemeToggle';
 import { Show } from 'solid-js';
 
@@ -83,6 +82,53 @@ function Sidebar() {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Bitácoras
+          </A>
+        </Show>
+
+        {/* aun no se muestran estas rutas porque aun no tenemos permisos en las rutas, pero ya esta todo preparado para cuando los tengamos, 
+            solo falta agregar los permisos a las rutas del backend y listo se van a mostrar automaticamente en el sidebar sin necesidad de tocar nada mas.*/}
+
+        {/* Rooms Solo si tiene permiso */}
+        <Show when={auth.hasPermission('rooms.read')}> 
+          <A href="/rooms" class={navLinkClass('/rooms')}>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Habitaciones
+          </A>
+        </Show>
+
+        {/* Reservations Solo si tiene permiso */}
+        <Show when={auth.hasPermission('reservations.read')}>
+          <A href="/reservations" class={navLinkClass('/reservations')}>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Reservas
+          </A>
+        </Show>
+
+        {/* Payments Solo si tiene permiso */}
+        <Show when={auth.hasPermission('payments.read')}>
+          <A href="/payments" class={navLinkClass('/payments')}>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+            Pagos
+          </A>
+        </Show>
+
+        {/* Hotel Reports Solo si tiene permiso */}
+        <Show when={auth.hasPermission('hotel-reports.read')}>
+          <A href="/hotel-reports" class={navLinkClass('/hotel-reports')}>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Reportes
           </A>
         </Show>
 

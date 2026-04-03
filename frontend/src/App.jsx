@@ -10,6 +10,11 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Users = lazy(() => import("./pages/Users"));
 const Logs = lazy(() => import("./pages/Logs"));
 const Roles = lazy(() => import("./pages/Roles"));
+const Rooms = lazy(() => import("./pages/Rooms"));
+const Reservations = lazy(() => import("./pages/Reservations"));
+const Payments = lazy(() => import("./pages/Payments"));
+const HotelReports = lazy(() => import("./pages/HotelReports"));
+
 
 function App() {
   return (
@@ -23,6 +28,10 @@ function App() {
           <Route path="/users" component={Users} />
           <Route path="/logs" component={Logs} />
           <Route path="/roles" component={Roles} />
+          <Route path="/rooms" component={Rooms} />
+          <Route path="/reservations" component={Reservations} />
+          <Route path="/payments" component={Payments} />
+          <Route path="/hotel-reports" component={HotelReports} />
           <Route path="/" component={Login} />
         </SolidRouter>
       </AuthProvider>
