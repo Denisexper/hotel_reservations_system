@@ -25,7 +25,7 @@ server.use(express.json());
 // Configuración de cors
 server.use(
   cors({
-    origin: "http://localhost:3001",
+    origin: "http://localhost:3002",
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
@@ -51,11 +51,8 @@ mongoConnect().then(async () => {
   ]);
 
   // Crear roles del sistema (solo si no existen)
-  const rolesCount = await Role.countDocuments();
-  if (rolesCount === 0) {
-    console.log("🌱 Creando roles del sistema...");
-    await seedRoles();
-  }
+  console.log("🌱 Creando roles del sistema...");
+  await seedRoles();
 });
 
 // Inicializar rutas

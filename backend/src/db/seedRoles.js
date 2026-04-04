@@ -5,6 +5,7 @@ export const PERMISSIONS = {
     USERS_CREATE: 'users.create',
     USERS_UPDATE: 'users.update',
     LOGS_READ: 'logs.read',
+    LOGS_EXPORT: 'logs.export',
     LOGS_DELETE: 'logs.delete',
     ROLES_READ: 'roles.read',
     ROLES_CREATE: 'roles.create',
@@ -60,6 +61,83 @@ export const seedRoles = async () => {
                 displayName: 'Usuario',
                 description: 'Usuario estándar sin permisos especiales',
                 permissions: [PERMISSIONS.DASHBOARD_VIEW],
+                isSystem: true
+            },
+            {
+                name: 'gerente',
+                displayName: 'Gerente',
+                description: 'Puede gestionar reservas y ver reportes y clientes del sistema',
+                permissions: [
+
+                    PERMISSIONS.ROOMS_READ,
+                    PERMISSIONS.ROOMS_CREATE,
+                    PERMISSIONS.ROOMS_UPDATE,
+                    PERMISSIONS.ROOMS_DELETE,
+                    PERMISSIONS.RESERVATIONS_READ,
+                    PERMISSIONS.RESERVATIONS_CREATE,
+                    PERMISSIONS.RESERVATIONS_UPDATE,
+                    PERMISSIONS.RESERVATIONS_DELETE,
+                    PERMISSIONS.HOTEL_REPORTS_READ,
+                    PERMISSIONS.HOTEL_REPORTS_CREATE,
+                    PERMISSIONS.HOTEL_REPORTS_UPDATE,
+                    PERMISSIONS.HOTEL_REPORTS_DELETE,
+                    PERMISSIONS.USERS_READ,
+                    PERMISSIONS.USERS_CREATE,
+                    PERMISSIONS.USERS_UPDATE,
+                    PERMISSIONS.DASHBOARD_VIEW,
+                    PERMISSIONS.PAYMENTS_READ,
+                    PERMISSIONS.PAYMENTS_CREATE,
+                    PERMISSIONS.LOGS_READ,
+                    PERMISSIONS.LOGS_EXPORT,
+                    PERMISSIONS.DASHBOARD_VIEW,
+                    PERMISSIONS.DASHBOARD_STATS,
+                ],
+                isSystem: true
+            },
+            {
+                name: 'recepcionista',
+                displayName: 'Recepcionista',
+                description: 'Puede gestionar habitaciones y reservas',
+                permissions: [
+                    PERMISSIONS.ROOMS_READ,
+                    PERMISSIONS.ROOMS_CREATE,
+                    PERMISSIONS.ROOMS_UPDATE,
+                    PERMISSIONS.ROOMS_DELETE,
+                    PERMISSIONS.RESERVATIONS_READ,
+                    PERMISSIONS.RESERVATIONS_CREATE,
+                    PERMISSIONS.RESERVATIONS_UPDATE,
+                    PERMISSIONS.RESERVATIONS_DELETE,
+                    PERMISSIONS.DASHBOARD_VIEW,
+                    PERMISSIONS.PAYMENTS_READ,
+                    PERMISSIONS.PAYMENTS_CREATE,
+                    PERMISSIONS.DASHBOARD_VIEW,
+                    PERMISSIONS.DASHBOARD_STATS,
+                ],
+                isSystem: true
+            },
+            {
+                name: 'cliente',
+                displayName: 'Cliente',
+                description: 'Puede ver y gestionar sus reservas',
+                permissions: [
+                    PERMISSIONS.ROOMS_READ,
+                    PERMISSIONS.RESERVATIONS_READ,
+                    PERMISSIONS.RESERVATIONS_CREATE,
+                    PERMISSIONS.RESERVATIONS_UPDATE,
+                    PERMISSIONS.DASHBOARD_VIEW,
+                    PERMISSIONS.PAYMENTS_CREATE,
+                ],
+                isSystem: true
+            },
+            {
+                name: 'ama_llaves',
+                displayName: 'Ama de llaves',
+                description: 'Puede gestionar el estado de las habitaciones',
+                permissions: [
+                    PERMISSIONS.ROOMS_READ,
+                    PERMISSIONS.ROOMS_UPDATE,
+                    PERMISSIONS.DASHBOARD_VIEW
+                ],
                 isSystem: true
             }
         ];
