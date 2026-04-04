@@ -2,7 +2,7 @@ import mongoose, { mongo } from "mongoose";
 import { Log } from "../models/logs.model.js";
 export const logsReports = async (req, res) => {
   try {
-    // ✅ NUEVO: Agregar page y limit
+    //  page y limit
     const {
       user,
       action,
