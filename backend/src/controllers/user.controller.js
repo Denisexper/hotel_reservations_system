@@ -21,7 +21,7 @@ export class userController {
       const hasPassword = await bcrypt.hash(password, 10);
 
       // Buscar el rol "user" por defecto
-      const userRole = await Role.findOne({ name: role || "user" });
+      const userRole = await Role.findOne({ name: role || "cliente" });
       if (!userRole) {
         return res.status(400).json({
           msj: "Rol no válido",

@@ -25,7 +25,7 @@ server.use(express.json());
 // Configuración de cors
 server.use(
   cors({
-    origin: "http://localhost:3002",
+    origin: "http://localhost:3001",
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),

@@ -63,7 +63,7 @@ class ApiService {
     return this.request("/me");
   }
 
-  async register(name, email, password, role = "user") {
+  async register(name, email, password, role = "cliente") {
     const data = await this.request("/register", {
       method: "POST",
       body: JSON.stringify({ name, email, password, role }),

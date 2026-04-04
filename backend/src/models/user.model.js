@@ -14,6 +14,20 @@ const userSchema = new Schema({
         trim: true,
         match: [/^\S+@\S+\.\S+$/, 'Email no válido']
     },
+
+    //verificación de email para el registro de clientes.
+    isEmailVerified: {
+        type: Boolean,
+        default: false
+    },
+    emailVerificationCode: {
+        type: String,
+        default: null
+    },
+    emailVerificationExpires: {
+        type: Date,
+        default: null
+    },
     password: {
         type: String,
         required: [true, 'La contraseña es obligatoria'],
@@ -24,9 +38,27 @@ const userSchema = new Schema({
         ref: 'Role',
         required: true
     },
+    phone: {
+        type: String,
+    },
+    documentType: {
+        type: String,
+        enum: ['DUI','DNI', 'Passport', 'DriverLicense'],
+    },
+    documentNumber: {
+        type: String,
+    },
+    country: {
+        type: String,
+        default: 'El Salvador'
+    },
+    // Campos adicionales para el perfil del usuario
     isActive: {
         type: Boolean,
         default: true
+    },
+    address: {
+        type: String,
     },
     lastLogin: {
         type: Date
