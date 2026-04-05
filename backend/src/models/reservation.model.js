@@ -46,6 +46,13 @@ const reservationSchema = new Schema({
         min: [1, 'Debe haber al menos 1 huésped']
     },
     
+    // precio capturado al momento de la reserva para evitar problemas con cambios de precio posteriores
+    pricePerNight: {
+        type: Number,
+        required: [true, 'El precio por noche es obligatorio'],
+        min: [0, 'El precio no puede ser negativo']
+    },
+    
     // Cálculo del costo total (días × precio)
     totalAmount: {
         type: Number,
