@@ -16,8 +16,15 @@ import roomsRoutes, { roomRoutes as roomsRoutesMetadata } from "./routes/rooms.r
 import { seedRoles } from "./db/seedRoles.js";
 import { seedPermissions } from "./db/seedPermissions.js";
 
+import path from 'path'
+import { fileURLToPath } from "url";
+
 // Configurar servidor
 const server = express();
+
+// para usar _dirname en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuración server con json
 server.use(express.json());
@@ -38,6 +45,9 @@ server.use(morgan("dev"));
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
+//servir los archivos estáticos de las imágenes de habitaciones
+server.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Configuración base de datos
 mongoConnect().then(async () => {

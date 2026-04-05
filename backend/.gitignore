@@ -1,2 +1,11 @@
 node_modules
 .env
+
+# editor settings
+.vscode/
+
+# user uploads
+uploads/
+
+uploads/*
+!uploads/.gitkeep
