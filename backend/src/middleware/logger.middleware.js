@@ -1,15 +1,15 @@
-// backend/src/middleware/logger.middleware.js
-
 import { Log } from "../models/logs.model.js";
 import { userModel } from "../models/user.model.js";
 import { Room } from "../models/room.model.js";
 import { Reservation } from "../models/reservation.model.js";
+import { Payment } from "../models/payment.model.js";
 
 // Mapa de modelos
 const models = {
     users: userModel,
     rooms: Room,
-    reservations: Reservation
+    reservations: Reservation,
+    payments: Payment,
 };
 
 // Configuración de qué campos mostrar por recurso
@@ -31,6 +31,14 @@ const resourceConfig = {
             { path: 'room', select: 'roomNumber type' }
         ],
         getDisplayName: (doc) => doc.reservationCode
+    },
+    payments: {
+        displayFields: ['amount', 'paymentMethod', 'status', 'receiptNumber', 'transactionId'],
+        populateFields: [
+            { path: 'reservation', select: 'reservationCode' },
+            { path: 'processedBy', select: 'name' }
+        ],
+        getDisplayName: (doc) => doc.transactionId
     }
 };
 

@@ -12,7 +12,7 @@ const reservationSchema = new Schema({
     // Cliente que hace la reserva
     client: {
         type: Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'userModel',
         required: [true, 'El cliente es obligatorio']
     },
     
@@ -89,7 +89,7 @@ const reservationSchema = new Schema({
     // Quién creó la reserva (cliente directo o recepcionista)
     createdBy: {
         type: Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'userModel',
         required: true
     },
     

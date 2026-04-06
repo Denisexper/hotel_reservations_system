@@ -266,52 +266,110 @@ export class ReservationController {
             const { id } = req.params;
             const { reason } = req.body;
 
-            const reservation = await Reservation.findById(id);
+            const reservation = await Reservation.findById(id)
+                .populate('client', 'name email')
+                .populate('room', 'roomNumber type');
+
             if (!reservation) {
                 return res.status(404).json({ msj: "Reserva no encontrada" });
             }
 
-            // No se puede cancelar si ya está cancelada o finalizada
             if (['cancelada', 'check-out'].includes(reservation.status)) {
-                return res.status(400).json({
-                    msj: "No se puede cancelar esta reserva"
-                });
+                return res.status(400).json({ msj: "No se puede cancelar esta reserva" });
             }
 
             // Calcular penalización
             const cancellationFee = reservation.calculateCancellationFee();
+
+            // Si ya había pagado, procesar reembolso automático
+            let refundPayment = null;
+            if (reservation.paymentStatus === 'pagado') {
+                const { Payment } = await import('../models/payment.model.js');
+                const { sendRefundEmail } = await import('../services/email.service.js');
+
+                // Buscar el pago original
+                const originalPayment = await Payment.findOne({
+                    reservation: id,
+                    status: 'completado'
+                });
+
+                if (originalPayment) {
+                    // Marcar pago original como reembolsado
+                    originalPayment.status = 'reembolsado';
+                    await originalPayment.save();
+
+                    // Calcular monto a reembolsar
+                    const refundAmount = reservation.totalAmount - cancellationFee;
+
+                    // Crear registro de reembolso (solo si hay algo que devolver)
+                    if (refundAmount > 0) {
+                        const transactionId = Payment.generateTransactionId();
+                        const receiptNumber = await Payment.generateReceiptNumber(originalPayment.receiptType);
+
+                        refundPayment = await Payment.create({
+                            reservation: id,
+                            amount: refundAmount,
+                            paymentMethod: originalPayment.paymentMethod,
+                            transactionId,
+                            receiptType: originalPayment.receiptType,
+                            receiptNumber,
+                            status: 'reembolsado',
+                            processedBy: req.user.id,
+                            notes: `Reembolso por cancelación. Penalización: $${cancellationFee.toFixed(2)} (${cancellationFee === 0 ? '0%' : cancellationFee === reservation.totalAmount * 0.3 ? '30%' : cancellationFee === reservation.totalAmount * 0.5 ? '50%' : '100%'})`
+                        });
+                    }
+
+                    // Enviar email de reembolso
+                    try {
+                        await sendRefundEmail({
+                            to: reservation.client.email,
+                            clientName: reservation.client.name,
+                            payment: {
+                                transactionId: originalPayment.transactionId,
+                                amount: refundAmount > 0 ? refundAmount : 0
+                            },
+                            reservation
+                        });
+                    } catch (emailError) {
+                        console.error('Error enviando email de reembolso:', emailError.message);
+                    }
+                }
+
+                reservation.paymentStatus = 'reembolsado';
+            }
 
             // Actualizar reserva
             reservation.status = 'cancelada';
             reservation.cancelledAt = new Date();
             reservation.cancellationReason = reason || 'Sin motivo especificado';
             reservation.cancellationFee = cancellationFee;
-
-            // Si ya había pagado, marcar para reembolso
-            if (reservation.paymentStatus === 'pagado') {
-                reservation.paymentStatus = 'reembolsado';
-            }
-
             await reservation.save();
 
-            await reservation.populate([
-                { path: 'client', select: 'name email' },
-                { path: 'room', select: 'roomNumber type' }
-            ]);
+            // Enviar email de cancelación
+            try {
+                const { sendCancellationEmail } = await import('../services/email.service.js');
+                await sendCancellationEmail({
+                    to: reservation.client.email,
+                    clientName: reservation.client.name,
+                    reservation,
+                    cancellationFee
+                });
+            } catch (emailError) {
+                console.error('Error enviando email de cancelación:', emailError.message);
+            }
 
             res.status(200).json({
                 msj: "Reserva cancelada correctamente",
                 data: reservation,
                 cancellationFee: cancellationFee > 0
-                    ? `Se aplicó una penalización de $${cancellationFee.toFixed(2)}`
-                    : "Sin penalización"
+                    ? `Penalización: $${cancellationFee.toFixed(2)}`
+                    : "Sin penalización",
+                refundAmount: reservation.paymentStatus === 'reembolsado'
+                    ? `Reembolso: $${(reservation.totalAmount - cancellationFee).toFixed(2)}`
+                    : null
             });
-
         } catch (error) {
-            res.status(500).json({
-                msj: "Error al cancelar reserva",
-                error: error.message
-            });
+            res.status(500).json({ msj: "Error al cancelar reserva", error: error.message });
         }
     }
 

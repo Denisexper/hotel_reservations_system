@@ -12,6 +12,7 @@ import rolesRoutes, { roleRoutes as roleRoutesMetadata } from "./routes/roles.ro
 import logsRoutes, { logRoutes as logRoutesMetadata } from "./routes/logs.routes.js";
 import roomsRoutes, { roomRoutes as roomsRoutesMetadata } from "./routes/rooms.routes.js";
 import reservationsRoutes, { reservationRoutes as reservationRoutesMetadata } from "./routes/reservations.routes.js";
+import paymentsRoutes, { paymentRoutes as paymentRoutesMetadata } from "./routes/payments.routes.js";
 
 // import de seeds
 import { seedRoles } from "./db/seedRoles.js";
@@ -61,6 +62,7 @@ mongoConnect().then(async () => {
     logRoutesMetadata,
     roomsRoutesMetadata,
     reservationRoutesMetadata,
+    paymentRoutesMetadata,
   ]);
 
   // Crear roles del sistema (solo si no existen)
@@ -78,6 +80,7 @@ server.use("/api/roles", rolesRoutes);
 server.use("/api", logsRoutes);
 server.use("/api/rooms", roomsRoutes);
 server.use("/api/reservations", reservationsRoutes);
+server.use("/api/payments", paymentsRoutes);
 
 // Middleware de manejo de errores (al final de todas las rutas)
 server.use(errorHandler);
