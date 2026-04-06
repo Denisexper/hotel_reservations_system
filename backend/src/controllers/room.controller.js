@@ -53,7 +53,7 @@ export class RoomController {
         try {
             const roomData = {
                 ...req.body,
-                createdBy: req.user.userId
+                createdBy: req.user.id
             };
 
             // Si se subieron imágenes, guardar las rutas

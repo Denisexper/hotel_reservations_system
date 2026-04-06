@@ -1,42 +1,131 @@
+// backend/src/middleware/logger.middleware.js
+
 import { Log } from "../models/logs.model.js";
 import { userModel } from "../models/user.model.js";
+import { Room } from "../models/room.model.js";
+import { Reservation } from "../models/reservation.model.js";
+
+// Mapa de modelos
+const models = {
+    users: userModel,
+    rooms: Room,
+    reservations: Reservation
+};
+
+// Configuración de qué campos mostrar por recurso
+const resourceConfig = {
+    users: {
+        displayFields: ['name', 'email', 'role', 'isActive'],
+        populateFields: [{ path: 'role', select: 'name' }],
+        getDisplayName: (doc) => doc.name
+    },
+    rooms: {
+        displayFields: ['roomNumber', 'type', 'basePrice', 'status', 'capacity'],
+        populateFields: [],
+        getDisplayName: (doc) => `Habitación ${doc.roomNumber}`
+    },
+    reservations: {
+        displayFields: ['reservationCode', 'checkIn', 'checkOut', 'status', 'totalAmount'],
+        populateFields: [
+            { path: 'client', select: 'name email' },
+            { path: 'room', select: 'roomNumber type' }
+        ],
+        getDisplayName: (doc) => doc.reservationCode
+    }
+};
 
 export const logAction = (action, resource) => {
     return async (req, res, next) => {
-        // Capturar snapshot ANTES de la acción (para update/delete)
         let dataBefore = null;
-        let targetUser = null;
-        let targetUserName = null;
+        let targetName = null;
 
-        if (req.params.id && (action === 'update' || action === 'delete')) {
+        const Model = models[resource];
+        const config = resourceConfig[resource];
+
+        // 1. Snapshot ANTES (para update/delete)
+        if (req.params.id && Model && (action === 'update' || action === 'delete')) {
             try {
-                const user = await userModel.findById(req.params.id).populate('role');
-                if (user) {
-                    targetUser = user._id;
-                    targetUserName = user.name;
+                let query = Model.findById(req.params.id);
 
-                    // Guardar snapshot completo (sin password)
-                    dataBefore = {
-                        name: user.name,
-                        email: user.email,
-                        role: user.role?.name || user.role,
-                        roleId: user.role?._id,
-                        isActive: user.isActive,
-                        lastLogin: user.lastLogin
-                    };
+                // Aplicar populate si está configurado
+                if (config?.populateFields) {
+                    config.populateFields.forEach(pop => {
+                        query = query.populate(pop);
+                    });
+                }
+
+                const doc = await query;
+
+                if (doc) {
+                    // Guardar snapshot completo
+                    dataBefore = doc.toObject();
+                    delete dataBefore.password; // Seguridad
+
+                    // Nombre del documento afectado
+                    targetName = config?.getDisplayName(doc);
+
+                    // Filtrar solo campos relevantes para mostrar en frontend
+                    if (config?.displayFields) {
+                        const filtered = {};
+                        config.displayFields.forEach(field => {
+                            if (dataBefore[field] !== undefined) {
+                                // Si es un objeto poblado (como role), extraer el nombre
+                                if (typeof dataBefore[field] === 'object' && dataBefore[field]?.name) {
+                                    filtered[field] = dataBefore[field].name;
+                                } else {
+                                    filtered[field] = dataBefore[field];
+                                }
+                            }
+                        });
+                        dataBefore = filtered;
+                    }
                 }
             } catch (error) {
-                console.error('Error fetching user before action:', error);
+                console.error(`Error fetching ${resource} before action:`, error);
             }
         }
 
-        // Interceptar la respuesta
+        // 2. Interceptar respuesta
         const originalJson = res.json;
 
         res.json = async function (data) {
-            // Crear log después de la respuesta
             if (req.user) {
                 try {
+                    // Extraer el objeto de la respuesta (flexible)
+                    const resultData = data.data || data.user || data.room || data.newUser;
+
+                    let dataAfter = null;
+                    // 3. Snapshot DESPUÉS (para create/update)
+                    if ((action === 'create' || action === 'update') && resultData) {
+                        dataAfter = JSON.parse(JSON.stringify(resultData));
+                        delete dataAfter.password;
+
+                        if (config?.displayFields) {
+                            const filtered = {};
+                            config.displayFields.forEach(field => {
+                                if (dataAfter[field] !== undefined) {
+                                    if (typeof dataAfter[field] === 'object') {
+                                        if (dataAfter[field]?.name) {
+                                            filtered[field] = dataAfter[field].name;
+                                        } else if (dataAfter[field]?.roomNumber) {
+                                            filtered[field] = dataAfter[field].roomNumber;
+                                        } else if (dataAfter[field]?._id) {
+                                            filtered[field] = dataAfter[field]._id.toString();
+                                        }
+                                    } else {
+                                        filtered[field] = dataAfter[field];
+                                    }
+                                }
+                            });
+                            dataAfter = filtered;
+                        }
+
+                        if (!targetName && config?.getDisplayName) {
+                            targetName = config.getDisplayName(resultData);
+                        }
+                    }
+
+                    // Construir log
                     const logData = {
                         user: req.user.id,
                         action,
@@ -44,63 +133,34 @@ export const logAction = (action, resource) => {
                         details: `${req.method} ${req.originalUrl}`,
                         userAgent: req.get('user-agent'),
                         statusCode: res.statusCode,
-                        dataBefore: dataBefore
+                        dataBefore: dataBefore,
+                        dataAfter: dataAfter,
+                        targetUserName: targetName, // Nombre del documento afectado
+                        targetUser: req.params.id || resultData?._id || null
                     };
 
-                    // Para CREATE: guardar el usuario creado en dataAfter
-                    if (action === 'create' && data.newUser) {
-                        logData.targetUser = data.newUser.id;
-                        logData.targetUserName = data.newUser.name;
-                        logData.dataAfter = {
-                            name: data.newUser.name,
-                            email: data.newUser.email,
-                            role: data.newUser.role,
-                            roleId: data.newUser.roleId
-                        };
-                    }
-                    // Para UPDATE: guardar el usuario actualizado en dataAfter
-                    else if (action === 'update' && data.user) {
-                        logData.targetUser = data.user.id;
-                        logData.targetUserName = data.user.name;
-
-                        // Construir dataAfter con el mismo formato que dataBefore
-                        logData.dataAfter = {
-                            name: data.user.name,
-                            email: data.user.email,
-                            role: data.user.role, // Ya viene como nombre del rol del controller
-                            roleId: data.user.roleId,
-                            isActive: data.user.isActive
-                        };
-
-                        // Calcular campos que cambiaron (ignorar roleId en la comparación)
+                    // Calcular campos cambiados (para UPDATE)
+                    if (action === 'update' && dataBefore && dataAfter) {
                         logData.changedFields = [];
-                        if (dataBefore && logData.dataAfter) {
-                            // Comparar solo campos relevantes (sin roleId)
-                            const fieldsToCompare = ['name', 'email', 'role', 'isActive'];
 
-                            fieldsToCompare.forEach(field => {
-                                const before = String(dataBefore[field] || '');
-                                const after = String(logData.dataAfter[field] || '');
+                        Object.keys(dataAfter).forEach(key => {
+                            let before = dataBefore[key];
+                            let after = dataAfter[key];
 
-                                if (before !== after) {
-                                    logData.changedFields.push(field);
-                                }
-                            });
-                        }
-                    }
-                    // Para DELETE: solo guardar el before
-                    else if (action === 'delete' && data.deleteUser) {
-                        logData.targetUser = data.deleteUser.id;
-                        logData.targetUserName = data.deleteUser.name;
-                        logData.dataAfter = null; // Fue eliminado
-                    }
-                    // Para otros casos (read, etc)
-                    else if (targetUser) {
-                        logData.targetUser = targetUser;
-                        logData.targetUserName = targetUserName;
+                            // Normalizar fechas para comparación
+                            if (before && after && (key === 'checkIn' || key === 'checkOut')) {
+                                before = new Date(before).getTime();
+                                after = new Date(after).getTime();
+                            }
+
+                            if (JSON.stringify(before) !== JSON.stringify(after)) {
+                                logData.changedFields.push(key);
+                            }
+                        });
                     }
 
                     await Log.create(logData);
+
                 } catch (error) {
                     console.error('Error creating log:', error);
                 }

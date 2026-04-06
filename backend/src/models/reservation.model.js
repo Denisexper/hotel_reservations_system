@@ -114,7 +114,6 @@ const reservationSchema = new Schema({
 // Índices para mejorar rendimiento
 reservationSchema.index({ client: 1, status: 1 });
 reservationSchema.index({ room: 1, checkIn: 1, checkOut: 1 });
-reservationSchema.index({ reservationCode: 1 });
 reservationSchema.index({ status: 1 });
 reservationSchema.index({ createdAt: -1 });
 

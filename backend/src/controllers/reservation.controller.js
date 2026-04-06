@@ -55,7 +55,7 @@ export class ReservationController {
     // Obtener MIS reservas (para clientes)
     async getMyReservations(req, res) {
         try {
-            const clientId = req.user.userId; // Del token JWT
+            const clientId = req.user.id; // Del token JWT
             const { status, page = 1, limit = 10 } = req.query;
 
             const filter = { client: clientId };
@@ -101,7 +101,7 @@ export class ReservationController {
     async createReservation(req, res) {
         try {
             const { room, checkIn, checkOut, numberOfGuests, specialRequests } = req.body;
-            const userId = req.user.userId;
+            const userId = req.user.id; // Del token JWT
 
             const start = dayjs(checkIn).startOf('day').add(15, 'hour');
             const end = dayjs(checkOut).startOf('day').add(11, 'hour');
@@ -120,6 +120,10 @@ export class ReservationController {
 
             if (numberOfGuests > roomData.capacity) {
                 return res.status(400).json({ msj: `Capacidad máxima: ${roomData.capacity} personas` });
+            }
+
+            if (numberOfGuests < 1) {
+                return res.status(400).json({ msj: "Debe haber al menos 1 huésped" });
             }
 
             const isAvailable = await Reservation.checkAvailability(room, start.toDate(), end.toDate());
@@ -174,7 +178,7 @@ export class ReservationController {
             }
 
             // Verificar permisos: solo el cliente o staff pueden ver la reserva
-            const userId = req.user.userId;
+            const userId = req.user.id;
             const userRole = req.user.role;
 
             const isOwner = reservation.client._id.toString() === userId;
@@ -204,7 +208,7 @@ export class ReservationController {
             const { id } = req.params;
             const { checkIn, checkOut, numberOfGuests, specialRequests, status } = req.body;
 
-            const existingReservation = await Reservation.findById(id); // Traemos la reserva
+            const existingReservation = await Reservation.findById(id).populate('room'); // Traemos la reserva
             if (!existingReservation) return res.status(404).json({ msj: "Reserva no encontrada" });
 
             if (['check-in', 'check-out', 'cancelada'].includes(existingReservation.status)) {

@@ -183,6 +183,16 @@ function Logs() {
     return "text-gray-600 dark:text-gray-400";
   };
 
+  //header del modal dinamico segun el recurso y la acción
+  const resourceLabel = (resource, action) => {
+    const labels = {
+      users: { create: 'Usuario creado', update: 'Usuario actualizado', delete: 'Usuario eliminado' },
+      rooms: { create: 'Habitación creada', update: 'Habitación actualizada', delete: 'Habitación eliminada' },
+      reservations: { create: 'Reserva creada', update: 'Reserva actualizada', delete: 'Reserva eliminada' }
+    };
+    return labels[resource]?.[action] || `${action}`;
+  };
+
   return (
     <ProtectedRoute>
       <Layout>
@@ -403,30 +413,37 @@ function Logs() {
                                 log.action === "logout"
                               }
                               fallback={
-                                <span class="text-xs text-gray-400 italic">
-                                  -
-                                </span>
+                                <span class="text-xs text-gray-400 italic">-</span>
                               }
                             >
                               <div>
                                 <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                  {/* Adaptación por recurso */}
                                   {log.action === "logout"
                                     ? log.user?.name
-                                    : log.targetUserName ||
-                                      log.targetUser?.name ||
-                                      "Usuario"}
+                                    : log.targetUserName || "Registro"}
                                 </p>
-                                <Show
-                                  when={
-                                    log.action === "logout"
-                                      ? log.user?.email
-                                      : log.targetUser?.email
-                                  }
-                                >
+
+                                {/* Mostrar info adicional según el recurso */}
+                                <Show when={log.resource === 'users' && log.action === 'logout' ? log.user?.email : log.targetUser?.email}>
                                   <p class="text-xs text-gray-500 dark:text-gray-400">
                                     {log.action === "logout"
                                       ? log.user?.email
                                       : log.targetUser?.email}
+                                  </p>
+                                </Show>
+
+                                {/* Info adicional para habitaciones */}
+                                <Show when={log.resource === 'rooms' && log.dataAfter?.type}>
+                                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Tipo: {log.dataAfter.type}
+                                  </p>
+                                </Show>
+
+                                {/* Info adicional para reservas */}
+                                <Show when={log.resource === 'reservations' && log.dataAfter?.reservationCode}>
+                                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Código: {log.dataAfter.reservationCode}
                                   </p>
                                 </Show>
                               </div>
@@ -508,10 +525,9 @@ function Logs() {
                   Detalles del cambio
                 </h2>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {selectedLog()?.action === "create" && "✨ Usuario creado"}
-                  {selectedLog()?.action === "update" &&
-                    "✏️ Usuario actualizado"}
-                  {selectedLog()?.action === "delete" && "🗑️ Usuario eliminado"}
+                  {selectedLog()?.action === "create" && `✨ ${resourceLabel(selectedLog()?.resource, 'create')}`}
+                  {selectedLog()?.action === "update" && `✏️ ${resourceLabel(selectedLog()?.resource, 'update')}`}
+                  {selectedLog()?.action === "delete" && `🗑️ ${resourceLabel(selectedLog()?.resource, 'delete')}`}
                   {" • "}
                   {new Date(selectedLog()?.createdAt).toLocaleString("es-ES")}
                 </p>
@@ -542,7 +558,9 @@ function Logs() {
               {/* Usuario afectado */}
               <div class="mb-6">
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  Usuario afectado:
+                  {selectedLog()?.resource === 'users' && 'Usuario afectado:'}
+                  {selectedLog()?.resource === 'rooms' && 'Habitación afectada:'}
+                  {selectedLog()?.resource === 'reservations' && 'Reserva afectada:'}
                 </p>
                 <p class="text-sm font-medium text-gray-900 dark:text-white">
                   {selectedLog()?.targetUserName || "Desconocido"}
@@ -550,45 +568,46 @@ function Logs() {
               </div>
 
               {/* CREATE */}
-              <Show
-                when={
-                  selectedLog()?.action === "create" && selectedLog()?.dataAfter
-                }
-              >
+              <Show when={selectedLog()?.action === "create" && selectedLog()?.dataAfter}>
                 <div class="bg-green-50 dark:bg-green-500/10 rounded-lg p-4 space-y-2">
                   <p class="text-xs font-semibold text-green-700 dark:text-green-400 mb-3">
                     Datos iniciales:
                   </p>
-                  <Show when={selectedLog()?.dataAfter.name}>
-                    <div class="flex justify-between">
-                      <span class="text-sm text-gray-600 dark:text-gray-400">
-                        Nombre:
-                      </span>
-                      <span class="text-sm font-medium text-gray-900 dark:text-white">
-                        {selectedLog()?.dataAfter.name}
-                      </span>
-                    </div>
-                  </Show>
-                  <Show when={selectedLog()?.dataAfter.email}>
-                    <div class="flex justify-between">
-                      <span class="text-sm text-gray-600 dark:text-gray-400">
-                        Email:
-                      </span>
-                      <span class="text-sm font-medium text-gray-900 dark:text-white">
-                        {selectedLog()?.dataAfter.email}
-                      </span>
-                    </div>
-                  </Show>
-                  <Show when={selectedLog()?.dataAfter.role}>
-                    <div class="flex justify-between">
-                      <span class="text-sm text-gray-600 dark:text-gray-400">
-                        Rol:
-                      </span>
-                      <span class="text-sm font-medium text-gray-900 dark:text-white">
-                        {selectedLog()?.dataAfter.role}
-                      </span>
-                    </div>
-                  </Show>
+
+                  {/* Renderizar campos dinámicamente */}
+                  <For each={Object.keys(selectedLog()?.dataAfter || {})}>
+                    {(key) => (
+                      <Show when={selectedLog()?.dataAfter[key] !== null && selectedLog()?.dataAfter[key] !== undefined}>
+                        <div class="flex justify-between">
+                          <span class="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                            {/* Traducir nombres de campos */}
+                            {key === 'name' && 'Nombre'}
+                            {key === 'email' && 'Email'}
+                            {key === 'role' && 'Rol'}
+                            {key === 'roomNumber' && 'Número'}
+                            {key === 'type' && 'Tipo'}
+                            {key === 'basePrice' && 'Precio Base'}
+                            {key === 'capacity' && 'Capacidad'}
+                            {key === 'status' && 'Estado'}
+                            {key === 'reservationCode' && 'Código'}
+                            {key === 'checkIn' && 'Check-In'}
+                            {key === 'checkOut' && 'Check-Out'}
+                            {key === 'totalAmount' && 'Total'}
+                            {!['name', 'email', 'role', 'roomNumber', 'type', 'basePrice', 'capacity', 'status', 'reservationCode', 'checkIn', 'checkOut', 'totalAmount'].includes(key) && key}
+                            :
+                          </span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            {/* Formatear valores según el tipo */}
+                            {key === 'checkIn' || key === 'checkOut'
+                              ? new Date(selectedLog()?.dataAfter[key]).toLocaleString('es-ES')
+                              : key === 'basePrice' || key === 'totalAmount'
+                                ? `$${selectedLog()?.dataAfter[key]}`
+                                : selectedLog()?.dataAfter[key].toString()}
+                          </span>
+                        </div>
+                      </Show>
+                    )}
+                  </For>
                 </div>
               </Show>
 
@@ -608,26 +627,46 @@ function Logs() {
                     {(field) => (
                       <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                         <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                          {/* Traducir nombres de campos */}
                           {field === "name" && "Nombre"}
                           {field === "email" && "Email"}
                           {field === "role" && "Rol"}
                           {field === "isActive" && "Estado"}
+                          {field === "roomNumber" && "Número de Habitación"}
+                          {field === "type" && "Tipo"}
+                          {field === "basePrice" && "Precio Base"}
+                          {field === "status" && "Estado"}
+                          {field === "capacity" && "Capacidad"}
+                          {field === "checkIn" && "Fecha Check-In"}
+                          {field === "checkOut" && "Fecha Check-Out"}
+                          {field === "totalAmount" && "Monto Total"}
+                          {!['name', 'email', 'role', 'isActive', 'roomNumber', 'type', 'basePrice', 'status', 'capacity', 'checkIn', 'checkOut', 'totalAmount'].includes(field) && field}
                         </p>
                         <div class="flex items-center gap-3">
                           <span class="text-sm text-red-600 dark:text-red-400 line-through flex-1">
+                            {/* Formatear ANTES */}
                             {field === "isActive"
                               ? selectedLog()?.dataBefore?.[field]
                                 ? "Activo"
                                 : "Inactivo"
-                              : selectedLog()?.dataBefore?.[field] || "-"}
+                              : field === 'checkIn' || field === 'checkOut'
+                                ? new Date(selectedLog()?.dataBefore?.[field]).toLocaleDateString('es-ES')
+                                : field === 'basePrice' || field === 'totalAmount'
+                                  ? `$${selectedLog()?.dataBefore?.[field]}`
+                                  : selectedLog()?.dataBefore?.[field] || "-"}
                           </span>
                           <span class="text-gray-400">→</span>
                           <span class="text-sm text-green-600 dark:text-green-400 font-medium flex-1 text-right">
+                            {/* Formatear DESPUÉS */}
                             {field === "isActive"
                               ? selectedLog()?.dataAfter?.[field]
                                 ? "Activo"
                                 : "Inactivo"
-                              : selectedLog()?.dataAfter?.[field] || "-"}
+                              : field === 'checkIn' || field === 'checkOut'
+                                ? new Date(selectedLog()?.dataAfter?.[field]).toLocaleDateString('es-ES')
+                                : field === 'basePrice' || field === 'totalAmount'
+                                  ? `$${selectedLog()?.dataAfter?.[field]}`
+                                  : selectedLog()?.dataAfter?.[field] || "-"}
                           </span>
                         </div>
                       </div>
