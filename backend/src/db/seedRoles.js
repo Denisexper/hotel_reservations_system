@@ -126,6 +126,7 @@ export const seedRoles = async () => {
                     PERMISSIONS.RESERVATIONS_UPDATE,
                     PERMISSIONS.DASHBOARD_VIEW,
                     PERMISSIONS.PAYMENTS_CREATE,
+                    PERMISSIONS.PAYMENTS_READ,
                 ],
                 isSystem: true
             },

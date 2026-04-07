@@ -164,6 +164,18 @@ export class ReservationController {
                 { path: 'room', select: 'roomNumber type basePrice images' }
             ]);
 
+            // Enviar email de confirmación de reserva
+            try {
+                const { sendReservationConfirmation } = await import('../services/email.service.js');
+                await sendReservationConfirmation({
+                    to: newReservation.client.email,
+                    clientName: newReservation.client.name,
+                    reservation: newReservation
+                });
+            } catch (emailError) {
+                console.error('Error enviando email de confirmación:', emailError.message);
+            }
+
             res.status(201).json({ msj: "Reserva creada exitosamente", data: newReservation });
         } catch (error) {
             res.status(500).json({ msj: "Error al crear reserva", error: error.message });

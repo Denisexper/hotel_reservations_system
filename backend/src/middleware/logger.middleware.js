@@ -3,7 +3,7 @@ import { userModel } from "../models/user.model.js";
 import { Room } from "../models/room.model.js";
 import { Reservation } from "../models/reservation.model.js";
 import { Payment } from "../models/payment.model.js";
-import { SeasonalPrice } from "../models/seasonalPrice.js";
+import { SeasonalPrice } from "../models/seasonalPrice.model.js";
 
 // Mapa de modelos
 const models = {

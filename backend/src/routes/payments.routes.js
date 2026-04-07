@@ -27,6 +27,14 @@ const routes = [
     },
     {
         method: 'GET',
+        path: '/:id/receipt',
+        permission: PERMISSIONS.PAYMENTS_READ,
+        description: 'Descargar comprobante de pago en PDF',
+        handler: controller.generateReceipt,
+        middlewares: []
+    },
+    {
+        method: 'GET',
         path: '/:id',
         permission: PERMISSIONS.PAYMENTS_READ,
         description: 'Obtener detalle de un pago',
@@ -48,7 +56,8 @@ const routes = [
         description: 'Reembolsar un pago',
         handler: controller.refundPayment,
         middlewares: [logAction('update', 'payments')]
-    }
+    },
+
 ];
 
 routes.forEach(route => {

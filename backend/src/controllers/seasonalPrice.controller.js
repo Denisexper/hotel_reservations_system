@@ -1,4 +1,4 @@
-import { SeasonalPrice } from '../models/seasonalPrice.js';
+import { SeasonalPrice } from '../models/seasonalPrice.model.js';
 
 export class SeasonalPriceController {
 

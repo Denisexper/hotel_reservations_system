@@ -243,4 +243,210 @@ export class PaymentController {
             res.status(500).json({ msj: "Error al procesar reembolso", error: error.message });
         }
     }
+
+    // Generar comprobante PDF
+    async generateReceipt(req, res) {
+        try {
+            const { id } = req.params;
+
+            const payment = await Payment.findById(id)
+                .populate({
+                    path: 'reservation',
+                    populate: [
+                        { path: 'client', select: 'name email phone documentType documentNumber' },
+                        { path: 'room', select: 'roomNumber type basePrice' }
+                    ]
+                })
+                .populate('processedBy', 'name email');
+
+            if (!payment) {
+                return res.status(404).json({ msj: "Pago no encontrado" });
+            }
+
+            // Verificar que el usuario puede ver este comprobante
+            const userId = req.user.id;
+            const userRole = req.user.role;
+            const isOwner = payment.reservation.client._id.toString() === userId;
+            const isStaff = ['admin', 'gerente', 'recepcionista'].includes(userRole);
+
+            if (!isOwner && !isStaff) {
+                return res.status(403).json({ msj: "No tienes permiso para ver este comprobante" });
+            }
+
+            const PDFDocument = (await import('pdfkit')).default;
+            const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+
+            // Headers de respuesta
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename=comprobante-${payment.receiptNumber}.pdf`);
+            doc.pipe(res);
+
+            const reservation = payment.reservation;
+            const client = reservation.client;
+            const room = reservation.room;
+            const isCredito = payment.receiptType === 'credito_fiscal';
+
+            // === HEADER ===
+            doc.fontSize(20).font('Helvetica-Bold').text('Hotel Reservations', { align: 'center' });
+            doc.fontSize(10).font('Helvetica').text('Sistema de Reservas', { align: 'center' });
+            doc.moveDown(0.5);
+
+            // Tipo de comprobante
+            doc.fontSize(14).font('Helvetica-Bold')
+                .text(isCredito ? 'CRÉDITO FISCAL' : 'COMPROBANTE CONSUMIDOR FINAL', { align: 'center' });
+            doc.moveDown(0.3);
+            doc.fontSize(10).font('Helvetica')
+                .text(`Nº: ${payment.receiptNumber}`, { align: 'center' });
+            doc.moveDown(1);
+
+            // Línea separadora
+            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
+            doc.moveDown(1);
+
+            // === DATOS DEL COMPROBANTE ===
+            const leftCol = 50;
+            const rightCol = 300;
+            let y = doc.y;
+
+            doc.fontSize(10).font('Helvetica-Bold').text('Fecha de emisión:', leftCol, y);
+            doc.font('Helvetica').text(new Date(payment.paymentDate).toLocaleDateString('es-ES', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            }), rightCol, y);
+
+            y += 18;
+            doc.font('Helvetica-Bold').text('Transacción:', leftCol, y);
+            doc.font('Helvetica').text(payment.transactionId, rightCol, y);
+
+            y += 18;
+            doc.font('Helvetica-Bold').text('Método de pago:', leftCol, y);
+            const methodLabels = { efectivo: 'Efectivo', tarjeta: 'Tarjeta de Crédito/Débito', transferencia: 'Transferencia Bancaria' };
+            doc.font('Helvetica').text(methodLabels[payment.paymentMethod] || payment.paymentMethod, rightCol, y);
+
+            doc.moveDown(2);
+            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
+            doc.moveDown(1);
+
+            // === DATOS DEL CLIENTE ===
+            doc.fontSize(12).font('Helvetica-Bold').text('Datos del Cliente');
+            doc.moveDown(0.5);
+            y = doc.y;
+
+            doc.fontSize(10).font('Helvetica-Bold').text('Nombre:', leftCol, y);
+            doc.font('Helvetica').text(client.name, rightCol, y);
+
+            y += 18;
+            doc.font('Helvetica-Bold').text('Email:', leftCol, y);
+            doc.font('Helvetica').text(client.email, rightCol, y);
+
+            if (client.phone) {
+                y += 18;
+                doc.font('Helvetica-Bold').text('Teléfono:', leftCol, y);
+                doc.font('Helvetica').text(client.phone, rightCol, y);
+            }
+
+            if (isCredito && client.documentType && client.documentNumber) {
+                y += 18;
+                doc.font('Helvetica-Bold').text('Documento:', leftCol, y);
+                doc.font('Helvetica').text(`${client.documentType}: ${client.documentNumber}`, rightCol, y);
+            }
+
+            doc.moveDown(2);
+            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
+            doc.moveDown(1);
+
+            // === DETALLE DE LA RESERVA ===
+            doc.fontSize(12).font('Helvetica-Bold').text('Detalle de la Reserva');
+            doc.moveDown(0.5);
+            y = doc.y;
+
+            doc.fontSize(10).font('Helvetica-Bold').text('Código de reserva:', leftCol, y);
+            doc.font('Helvetica').text(reservation.reservationCode, rightCol, y);
+
+            y += 18;
+            doc.font('Helvetica-Bold').text('Habitación:', leftCol, y);
+            doc.font('Helvetica').text(`${room.roomNumber} - ${room.type}`, rightCol, y);
+
+            y += 18;
+            doc.font('Helvetica-Bold').text('Check-In:', leftCol, y);
+            doc.font('Helvetica').text(new Date(reservation.checkIn).toLocaleDateString('es-ES'), rightCol, y);
+
+            y += 18;
+            doc.font('Helvetica-Bold').text('Check-Out:', leftCol, y);
+            doc.font('Helvetica').text(new Date(reservation.checkOut).toLocaleDateString('es-ES'), rightCol, y);
+
+            const nights = Math.ceil((new Date(reservation.checkOut) - new Date(reservation.checkIn)) / (1000 * 60 * 60 * 24));
+            y += 18;
+            doc.font('Helvetica-Bold').text('Noches:', leftCol, y);
+            doc.font('Helvetica').text(`${nights}`, rightCol, y);
+
+            doc.moveDown(2);
+            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
+            doc.moveDown(1);
+
+            // === DETALLE DE PAGO ===
+            doc.fontSize(12).font('Helvetica-Bold').text('Detalle de Pago');
+            doc.moveDown(0.5);
+
+            // Tabla simple
+            const tableTop = doc.y;
+            const pricePerNight = payment.amount / nights;
+
+            // Header de tabla
+            doc.fontSize(9).font('Helvetica-Bold');
+            doc.text('Descripción', leftCol, tableTop);
+            doc.text('Noches', 300, tableTop);
+            doc.text('Precio/Noche', 370, tableTop);
+            doc.text('Subtotal', 480, tableTop, { align: 'right', width: 80 });
+
+            doc.moveTo(50, tableTop + 15).lineTo(562, tableTop + 15).stroke('#eeeeee');
+
+            // Fila de detalle
+            const rowY = tableTop + 22;
+            doc.font('Helvetica');
+            doc.text(`Habitación ${room.roomNumber} (${room.type})`, leftCol, rowY);
+            doc.text(`${nights}`, 300, rowY);
+            doc.text(`$${pricePerNight.toFixed(2)}`, 370, rowY);
+            doc.text(`$${payment.amount.toFixed(2)}`, 480, rowY, { align: 'right', width: 80 });
+
+            doc.moveDown(3);
+            doc.moveTo(350, doc.y).lineTo(562, doc.y).stroke('#cccccc');
+            doc.moveDown(0.5);
+
+            // Totales
+            if (isCredito) {
+                const subtotal = payment.amount / 1.13;
+                const iva = payment.amount - subtotal;
+
+                y = doc.y;
+                doc.fontSize(10).font('Helvetica-Bold').text('Subtotal:', 370, y);
+                doc.font('Helvetica').text(`$${subtotal.toFixed(2)}`, 480, y, { align: 'right', width: 80 });
+
+                y += 18;
+                doc.font('Helvetica-Bold').text('IVA (13%):', 370, y);
+                doc.font('Helvetica').text(`$${iva.toFixed(2)}`, 480, y, { align: 'right', width: 80 });
+
+                y += 18;
+                doc.moveTo(350, y).lineTo(562, y).stroke('#cccccc');
+                y += 8;
+            }
+
+            y = doc.y + (isCredito ? 0 : 5);
+            doc.fontSize(14).font('Helvetica-Bold').text('TOTAL:', 370, y);
+            doc.text(`$${payment.amount.toFixed(2)}`, 480, y, { align: 'right', width: 80 });
+
+            // === FOOTER ===
+            doc.moveDown(4);
+            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
+            doc.moveDown(1);
+
+            doc.fontSize(8).font('Helvetica').fillColor('#999999');
+            doc.text('Este documento es un comprobante de pago generado electrónicamente.', { align: 'center' });
+            doc.text(`Procesado por: ${payment.processedBy.name} (${payment.processedBy.email})`, { align: 'center' });
+            doc.text(`Estado del pago: ${payment.status.toUpperCase()}`, { align: 'center' });
+
+            doc.end();
+        } catch (error) {
+            res.status(500).json({ msj: "Error al generar comprobante", error: error.message });
+        }
+    }
 }
