@@ -6,7 +6,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: email_user,  //correo del hotel, actualmetne es un correo de prueba
-        pass: email_pass,  
+        pass: email_pass,
     }
 });
 
@@ -240,6 +240,58 @@ export const sendRefundEmail = async ({ to, clientName, payment, reservation }) 
         from: `"Hotel Reservations" <${process.env.EMAIL_USER}>`,
         to,
         subject: `💰 Reembolso Procesado - ${reservation.reservationCode}`,
+        html: baseTemplate(content)
+    });
+};
+
+// Email de recordatorio antes del check-in
+export const sendCheckInReminder = async ({ to, clientName, reservation }) => {
+    const daysUntil = Math.ceil((new Date(reservation.checkIn) - new Date()) / (1000 * 60 * 60 * 24));
+
+    const content = `
+        <h2>⏰ Recordatorio de tu Reserva</h2>
+        <p>Hola <strong>${clientName}</strong>,</p>
+        <p>Tu estancia está a <strong>${daysUntil} día${daysUntil > 1 ? 's' : ''}</strong> de comenzar. ¡Te esperamos!</p>
+        
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Código:</span>
+                <span class="info-value">${reservation.reservationCode}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Habitación:</span>
+                <span class="info-value">${reservation.room?.roomNumber || 'N/A'} - ${reservation.room?.type || ''}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Check-In:</span>
+                <span class="info-value">${new Date(reservation.checkIn).toLocaleDateString('es-ES')} a las 3:00 PM</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Check-Out:</span>
+                <span class="info-value">${new Date(reservation.checkOut).toLocaleDateString('es-ES')} a las 11:00 AM</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Huéspedes:</span>
+                <span class="info-value">${reservation.numberOfGuests}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Estado de pago:</span>
+                <span class="info-value">${reservation.paymentStatus === 'pagado' ? '✅ Pagado' : '⚠️ Pendiente de pago'}</span>
+            </div>
+        </div>
+        
+        ${reservation.paymentStatus !== 'pagado'
+            ? '<p><span class="badge badge-warning">Recuerda realizar tu pago antes del check-in</span></p>'
+            : '<p><span class="badge badge-success">Tu pago está confirmado</span></p>'
+        }
+        
+        <p style="color: #666; font-size: 14px;">Si necesitas modificar o cancelar tu reserva, hazlo con anticipación para evitar penalizaciones.</p>
+    `;
+
+    await transporter.sendMail({
+        from: `"Hotel Reservations" <${email_user}>`,
+        to,
+        subject: `⏰ Recordatorio - Tu reserva ${reservation.reservationCode} es en ${daysUntil} día${daysUntil > 1 ? 's' : ''}`,
         html: baseTemplate(content)
     });
 };
