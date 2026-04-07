@@ -28,6 +28,14 @@ const routes = [
     },
     {
         method: 'GET',
+        path: '/available',
+        permission: PERMISSIONS.ROOMS_READ,
+        description: 'Buscar habitaciones disponibles por fechas',
+        handler: controller.searchAvailable,
+        middlewares: []
+    },
+    {
+        method: 'GET',
         path: '/:id',
         permission: PERMISSIONS.ROOMS_READ,
         description: 'Obtener detalle de una habitación',
@@ -57,7 +65,8 @@ const routes = [
         description: 'Eliminar imagen de habitación',
         handler: controller.deleteImage,
         middlewares: [logAction('update', 'rooms')]
-    }
+    },
+    
 ];
 
 // Registro automático idéntico al tuyo

@@ -190,4 +190,79 @@ export class RoomController {
             res.status(500).json({ msj: "Error al eliminar imagen", error: error.message });
         }
     }
+
+    // Buscar habitaciones disponibles por fechas, capacidad y tipo
+    async searchAvailable(req, res) {
+        try {
+            const { checkIn, checkOut, guests, type, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
+
+            if (!checkIn || !checkOut) {
+                return res.status(400).json({ msj: "Las fechas de entrada y salida son obligatorias" });
+            }
+
+            const start = new Date(checkIn);
+            const end = new Date(checkOut);
+
+            if (end <= start) {
+                return res.status(400).json({ msj: "La fecha de salida debe ser posterior a la entrada" });
+            }
+
+            // Buscar reservas que se solapan con el rango de fechas
+            const { Reservation } = await import('../models/reservation.model.js');
+
+            const occupiedRoomIds = await Reservation.distinct('room', {
+                status: { $in: ['pendiente', 'confirmada', 'check-in'] },
+                $or: [
+                    { checkIn: { $lte: start }, checkOut: { $gt: start } },
+                    { checkIn: { $lt: end }, checkOut: { $gte: end } },
+                    { checkIn: { $gte: start }, checkOut: { $lte: end } }
+                ]
+            });
+
+            // Filtrar habitaciones disponibles
+            const filter = {
+                isActive: true,
+                status: 'disponible',
+                _id: { $nin: occupiedRoomIds }
+            };
+
+            if (guests) filter.capacity = { $gte: Number(guests) };
+            if (type) filter.type = type;
+            if (minPrice || maxPrice) {
+                filter.basePrice = {};
+                if (minPrice) filter.basePrice.$gte = Number(minPrice);
+                if (maxPrice) filter.basePrice.$lte = Number(maxPrice);
+            }
+
+            const pageNum = parseInt(page);
+            const limitNum = parseInt(limit);
+            const skip = (pageNum - 1) * limitNum;
+
+            const [rooms, totalRecords] = await Promise.all([
+                Room.find(filter)
+                    .sort({ basePrice: 1, floor: 1 })
+                    .skip(skip)
+                    .limit(limitNum),
+                Room.countDocuments(filter)
+            ]);
+
+            const totalPages = Math.ceil(totalRecords / limitNum);
+
+            res.status(200).json({
+                msj: rooms.length === 0 ? "No hay habitaciones disponibles para esas fechas" : "Habitaciones disponibles",
+                total: totalRecords,
+                data: rooms,
+                pagination: {
+                    currentPage: pageNum,
+                    totalPages,
+                    totalRecords,
+                    limit: limitNum,
+                    hasNextPage: pageNum < totalPages,
+                    hasPrevPage: pageNum > 1
+                }
+            });
+        } catch (error) {
+            res.status(500).json({ msj: "Error al buscar disponibilidad", error: error.message });
+        }
+    }
 }
