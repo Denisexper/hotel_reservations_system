@@ -3,6 +3,7 @@ import { userModel } from "../models/user.model.js";
 import { Room } from "../models/room.model.js";
 import { Reservation } from "../models/reservation.model.js";
 import { Payment } from "../models/payment.model.js";
+import { SeasonalPrice } from "../models/seasonalPrice.js";
 
 // Mapa de modelos
 const models = {
@@ -10,6 +11,7 @@ const models = {
     rooms: Room,
     reservations: Reservation,
     payments: Payment,
+    seasonals: SeasonalPrice,
 };
 
 // Configuración de qué campos mostrar por recurso
@@ -39,6 +41,11 @@ const resourceConfig = {
             { path: 'processedBy', select: 'name' }
         ],
         getDisplayName: (doc) => doc.transactionId
+    },
+    seasonals: {
+        displayFields: ['seasonName', 'startDate', 'endDate', 'modifierType', 'modifierValue', 'roomType'],
+        populateFields: [],
+        getDisplayName: (doc) => doc.seasonName
     }
 };
 

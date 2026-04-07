@@ -134,7 +134,14 @@ export class ReservationController {
             let nights = end.diff(start, 'day');
             if (nights <= 0) nights = 1;
 
-            const priceSnapshot = roomData.basePrice;
+            const { SeasonalPrice } = await import('../models/seasonalPrice.model.js');
+            const { price: adjustedPrice, season } = await SeasonalPrice.getAdjustedPrice(
+                roomData.basePrice,
+                roomData.type,
+                start.toDate()
+            );
+
+            const priceSnapshot = adjustedPrice;
             const totalAmount = nights * priceSnapshot;
 
             const reservationCode = await Reservation.generateReservationCode();
