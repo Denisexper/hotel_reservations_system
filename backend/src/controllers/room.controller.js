@@ -246,12 +246,28 @@ export class RoomController {
                 Room.countDocuments(filter)
             ]);
 
+            // Aplicar precios por temporada
+            const { SeasonalPrice } = await import('../models/seasonalPrice.js');
+            const roomsWithPricing = await Promise.all(
+                rooms.map(async (room) => {
+                    const roomObj = room.toObject();
+                    const { price, season } = await SeasonalPrice.getAdjustedPrice(
+                        room.basePrice,
+                        room.type,
+                        start
+                    );
+                    roomObj.adjustedPrice = price;
+                    roomObj.season = season;
+                    return roomObj;
+                })
+            );
+
             const totalPages = Math.ceil(totalRecords / limitNum);
 
             res.status(200).json({
                 msj: rooms.length === 0 ? "No hay habitaciones disponibles para esas fechas" : "Habitaciones disponibles",
                 total: totalRecords,
-                data: rooms,
+                data: roomsWithPricing,
                 pagination: {
                     currentPage: pageNum,
                     totalPages,

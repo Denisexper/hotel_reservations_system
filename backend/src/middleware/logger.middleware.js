@@ -42,7 +42,7 @@ const resourceConfig = {
         ],
         getDisplayName: (doc) => doc.transactionId
     },
-    seasonals: {
+    seasonal_prices: {
         displayFields: ['seasonName', 'startDate', 'endDate', 'modifierType', 'modifierValue', 'roomType'],
         populateFields: [],
         getDisplayName: (doc) => doc.seasonName

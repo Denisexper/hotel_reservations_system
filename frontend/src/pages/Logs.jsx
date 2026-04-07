@@ -188,7 +188,9 @@ function Logs() {
     const labels = {
       users: { create: 'Usuario creado', update: 'Usuario actualizado', delete: 'Usuario eliminado' },
       rooms: { create: 'Habitación creada', update: 'Habitación actualizada', delete: 'Habitación eliminada' },
-      reservations: { create: 'Reserva creada', update: 'Reserva actualizada', delete: 'Reserva eliminada' }
+      reservations: { create: 'Reserva creada', update: 'Reserva actualizada', delete: 'Reserva eliminada' },
+      payments: { create: 'Pago registrado', update: 'Pago actualizado', delete: 'Pago eliminado' },
+      seasonal_prices: { create: 'Temporada creada', update: 'Temporada actualizada', delete: 'Temporada eliminada' }
     };
     return labels[resource]?.[action] || `${action}`;
   };
@@ -364,7 +366,7 @@ function Logs() {
                         Recurso
                       </th>
                       <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Usuario Afectado
+                        Recurso Afectado
                       </th>
                       <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Status
@@ -561,6 +563,8 @@ function Logs() {
                   {selectedLog()?.resource === 'users' && 'Usuario afectado:'}
                   {selectedLog()?.resource === 'rooms' && 'Habitación afectada:'}
                   {selectedLog()?.resource === 'reservations' && 'Reserva afectada:'}
+                  {selectedLog()?.resource === 'payments' && 'Pago afectado:'}
+                  {selectedLog()?.resource === 'seasonal_prices' && 'Temporada afectada:'}
                 </p>
                 <p class="text-sm font-medium text-gray-900 dark:text-white">
                   {selectedLog()?.targetUserName || "Desconocido"}
