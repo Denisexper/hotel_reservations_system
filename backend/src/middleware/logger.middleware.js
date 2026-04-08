@@ -4,6 +4,7 @@ import { Room } from "../models/room.model.js";
 import { Reservation } from "../models/reservation.model.js";
 import { Payment } from "../models/payment.model.js";
 import { SeasonalPrice } from "../models/seasonalPrice.model.js";
+import { MaintenanceLog } from "../models/maintenanceLog.model.js";
 
 // Mapa de modelos
 const models = {
@@ -12,6 +13,7 @@ const models = {
     reservations: Reservation,
     payments: Payment,
     seasonals: SeasonalPrice,
+    maintenance: MaintenanceLog,
 };
 
 // Configuración de qué campos mostrar por recurso
@@ -46,7 +48,15 @@ const resourceConfig = {
         displayFields: ['seasonName', 'startDate', 'endDate', 'modifierType', 'modifierValue', 'roomType'],
         populateFields: [],
         getDisplayName: (doc) => doc.seasonName
-    }
+    },
+    maintenance: {
+        displayFields: ['issue', 'priority', 'status'],
+        populateFields: [
+            { path: 'room', select: 'roomNumber' },
+            { path: 'reportedBy', select: 'name' }
+        ],
+        getDisplayName: (doc) => `Ticket - Hab. ${doc.room?.roomNumber || 'N/A'}`
+    },
 };
 
 export const logAction = (action, resource) => {

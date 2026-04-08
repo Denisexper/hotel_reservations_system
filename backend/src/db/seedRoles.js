@@ -31,6 +31,10 @@ export const PERMISSIONS = {
     HOTEL_REPORTS_CREATE: 'hotel_reports.create',
     HOTEL_REPORTS_UPDATE: 'hotel_reports.update',
     HOTEL_REPORTS_DELETE: 'hotel_reports.delete',
+    MAINTENANCE_READ: 'maintenance.read',
+    MAINTENANCE_CREATE: 'maintenance.create',
+    MAINTENANCE_UPDATE: 'maintenance.update',
+    MAINTENANCE_DELETE: 'maintenance.delete',
 };
 
 export const seedRoles = async () => {
@@ -95,6 +99,10 @@ export const seedRoles = async () => {
                     PERMISSIONS.LOGS_EXPORT,
                     PERMISSIONS.DASHBOARD_VIEW,
                     PERMISSIONS.DASHBOARD_STATS,
+                    PERMISSIONS.MAINTENANCE_READ,
+                    PERMISSIONS.MAINTENANCE_CREATE,
+                    PERMISSIONS.MAINTENANCE_UPDATE,
+                    PERMISSIONS.MAINTENANCE_DELETE,
                 ],
                 isSystem: true
             },
@@ -118,6 +126,8 @@ export const seedRoles = async () => {
                     PERMISSIONS.PAYMENTS_CREATE,
                     PERMISSIONS.DASHBOARD_VIEW,
                     PERMISSIONS.DASHBOARD_STATS,
+                    PERMISSIONS.MAINTENANCE_CREATE,
+                    PERMISSIONS.MAINTENANCE_READ,
                 ],
                 isSystem: true
             },
@@ -143,7 +153,9 @@ export const seedRoles = async () => {
                 permissions: [
                     PERMISSIONS.ROOMS_READ,
                     PERMISSIONS.ROOMS_UPDATE,
-                    PERMISSIONS.DASHBOARD_VIEW
+                    PERMISSIONS.DASHBOARD_VIEW,
+                    PERMISSIONS.MAINTENANCE_READ,
+                    PERMISSIONS.MAINTENANCE_CREATE,
                 ],
                 isSystem: true
             }
