@@ -413,4 +413,78 @@ export class ReservationController {
             res.status(500).json({ msj: "Error al verificar disponibilidad", error: error.message });
         }
     }
+
+    // Check-in: recepcionista registra llegada del cliente para el automatizar el proceso y actualizar estado de reserva y habitación
+    async checkIn(req, res) {
+        try {
+            const { id } = req.params;
+
+            const reservation = await Reservation.findById(id)
+                .populate('client', 'name email phone')
+                .populate('room', 'roomNumber type');
+
+            if (!reservation) {
+                return res.status(404).json({ msj: "Reserva no encontrada" });
+            }
+
+            if (reservation.status !== 'confirmada') {
+                return res.status(400).json({
+                    msj: `No se puede hacer check-in. Estado actual: ${reservation.status}`
+                });
+            }
+
+            if (reservation.paymentStatus !== 'pagado') {
+                return res.status(400).json({ msj: "La reserva debe estar pagada para hacer check-in" });
+            }
+
+            // Actualizar reserva
+            reservation.status = 'check-in';
+            await reservation.save();
+
+            // Actualizar habitación a ocupada
+            await Room.findByIdAndUpdate(reservation.room._id, { status: 'ocupada' });
+
+            res.status(200).json({
+                msj: "Check-in realizado exitosamente",
+                data: reservation
+            });
+        } catch (error) {
+            res.status(500).json({ msj: "Error al realizar check-in", error: error.message });
+        }
+    }
+
+    // Check-out: recepcionista registra salida del cliente para el automatizar el proceso y actualizar estado de reserva y habitación
+    async checkOut(req, res) {
+        try {
+            const { id } = req.params;
+
+            const reservation = await Reservation.findById(id)
+                .populate('client', 'name email phone')
+                .populate('room', 'roomNumber type');
+
+            if (!reservation) {
+                return res.status(404).json({ msj: "Reserva no encontrada" });
+            }
+
+            if (reservation.status !== 'check-in') {
+                return res.status(400).json({
+                    msj: `No se puede hacer check-out. Estado actual: ${reservation.status}`
+                });
+            }
+
+            // Actualizar reserva
+            reservation.status = 'check-out';
+            await reservation.save();
+
+            // Actualizar habitación a limpieza
+            await Room.findByIdAndUpdate(reservation.room._id, { status: 'limpieza' });
+
+            res.status(200).json({
+                msj: "Check-out realizado exitosamente",
+                data: reservation
+            });
+        } catch (error) {
+            res.status(500).json({ msj: "Error al realizar check-out", error: error.message });
+        }
+    }
 }

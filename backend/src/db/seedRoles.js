@@ -21,6 +21,8 @@ export const PERMISSIONS = {
     RESERVATIONS_CREATE: 'reservations.create',
     RESERVATIONS_UPDATE: 'reservations.update',
     RESERVATIONS_DELETE: 'reservations.delete',
+    RESERVATIONS_CHECKIN: 'reservations.checkin',
+    RESERVATIONS_CHECKOUT: 'reservations.checkout',
     PAYMENTS_READ: 'payments.read',
     PAYMENTS_CREATE: 'payments.create',
     PAYMENTS_UPDATE: 'payments.update',
@@ -77,6 +79,8 @@ export const seedRoles = async () => {
                     PERMISSIONS.RESERVATIONS_CREATE,
                     PERMISSIONS.RESERVATIONS_UPDATE,
                     PERMISSIONS.RESERVATIONS_DELETE,
+                    PERMISSIONS.RESERVATIONS_CHECKIN,
+                    PERMISSIONS.RESERVATIONS_CHECKOUT,
                     PERMISSIONS.HOTEL_REPORTS_READ,
                     PERMISSIONS.HOTEL_REPORTS_CREATE,
                     PERMISSIONS.HOTEL_REPORTS_UPDATE,
@@ -107,6 +111,8 @@ export const seedRoles = async () => {
                     PERMISSIONS.RESERVATIONS_CREATE,
                     PERMISSIONS.RESERVATIONS_UPDATE,
                     PERMISSIONS.RESERVATIONS_DELETE,
+                    PERMISSIONS.RESERVATIONS_CHECKIN,
+                    PERMISSIONS.RESERVATIONS_CHECKOUT,
                     PERMISSIONS.DASHBOARD_VIEW,
                     PERMISSIONS.PAYMENTS_READ,
                     PERMISSIONS.PAYMENTS_CREATE,
@@ -145,11 +151,11 @@ export const seedRoles = async () => {
 
         for (const roleData of defaultRoles) {
             const existingRole = await Role.findOne({ name: roleData.name });
-            
+
             if (existingRole) {
                 await Role.findOneAndUpdate(
                     { name: roleData.name },
-                    { 
+                    {
                         permissions: roleData.permissions,
                         displayName: roleData.displayName,
                         description: roleData.description

@@ -64,6 +64,22 @@ const routes = [
         description: 'Cancelar una reserva con cálculo de penalización',
         handler: controller.cancelReservation,
         middlewares: [logAction('update', 'reservations')]
+    },
+    {
+        method: 'PATCH',
+        path: '/:id/check-in',
+        permission: PERMISSIONS.RESERVATIONS_CHECKIN,
+        description: 'Realizar check-in de una reserva',
+        handler: controller.checkIn,
+        middlewares: [logAction('update', 'reservations')]
+    },
+    {
+        method: 'PATCH',
+        path: '/:id/check-out',
+        permission: PERMISSIONS.RESERVATIONS_CHECKOUT,
+        description: 'Realizar check-out de una reserva',
+        handler: controller.checkOut,
+        middlewares: [logAction('update', 'reservations')]
     }
 ];
 
@@ -82,5 +98,5 @@ routes.forEach(route => {
     );
 });
 
-export const reservationRoutes = routes; 
+export const reservationRoutes = routes;
 export default router;
