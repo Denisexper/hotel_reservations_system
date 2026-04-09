@@ -63,6 +63,22 @@ const routes = [
         description: 'Ingresos por método de pago',
         handler: controller.getRevenueByPaymentMethod,
         middlewares: []
+    },
+    {
+        method: 'GET',
+        path: '/export/excel',
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
+        description: 'Exportar estadísticas a Excel',
+        handler: controller.exportExcel,
+        middlewares: []
+    },
+    {
+        method: 'GET',
+        path: '/export/pdf',
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
+        description: 'Exportar estadísticas a PDF',
+        handler: controller.exportPDF,
+        middlewares: []
     }
 ];
 
