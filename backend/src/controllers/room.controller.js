@@ -258,7 +258,7 @@ export class RoomController {
             ]);
 
             // Aplicar precios por temporada
-            const { SeasonalPrice } = await import('../models/seasonalPrice.js');
+            const { SeasonalPrice } = await import('../models/seasonalPrice.model.js');
             const roomsWithPricing = await Promise.all(
                 rooms.map(async (room) => {
                     const roomObj = room.toObject();

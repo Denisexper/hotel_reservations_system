@@ -297,6 +297,124 @@ class ApiService {
     const params = new URLSearchParams(filters).toString();
     return this.request(`/rooms/available${params ? `?${params}` : ""}`);
   }
+
+  // ============================================
+  // RESERVATIONS (Reservas)
+  // ============================================
+
+  // Listar todas las reservas (staff)
+  async getReservations(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    return this.request(`/reservations${params ? `?${params}` : ""}`);
+  }
+
+  // Mis reservas (cliente)
+  async getMyReservations(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    return this.request(`/reservations/my-reservations${params ? `?${params}` : ""}`);
+  }
+
+  // Obtener detalle de una reserva
+  async getReservation(id) {
+    return this.request(`/reservations/${id}`);
+  }
+
+  // Crear reserva
+  async createReservation(reservationData) {
+    return this.request("/reservations", {
+      method: "POST",
+      body: JSON.stringify(reservationData),
+    });
+  }
+
+  // Actualizar reserva
+  async updateReservation(id, reservationData) {
+    return this.request(`/reservations/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(reservationData),
+    });
+  }
+
+  // Cancelar reserva
+  async cancelReservation(id, reason) {
+    return this.request(`/reservations/cancel/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  // Check-in
+  async checkIn(id) {
+    return this.request(`/reservations/${id}/check-in`, {
+      method: "PATCH",
+    });
+  }
+
+  // Check-out
+  async checkOut(id) {
+    return this.request(`/reservations/${id}/check-out`, {
+      method: "PATCH",
+    });
+  }
+
+  // Verificar disponibilidad
+  async checkAvailability(roomId, checkIn, checkOut) {
+    const params = new URLSearchParams({ roomId, checkIn, checkOut }).toString();
+    return this.request(`/reservations/check-availability?${params}`);
+  }
+
+  // ============================================
+  // PAYMENTS (Pagos)
+  // ============================================
+
+  // Listar pagos
+  async getPayments(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    return this.request(`/payments${params ? `?${params}` : ""}`);
+  }
+
+  // Obtener pago por ID
+  async getPayment(id) {
+    return this.request(`/payments/${id}`);
+  }
+
+  // Pagos de una reserva
+  async getPaymentsByReservation(reservationId) {
+    return this.request(`/payments/reservation/${reservationId}`);
+  }
+
+  // Registrar pago
+  async createPayment(paymentData) {
+    return this.request("/payments", {
+      method: "POST",
+      body: JSON.stringify(paymentData),
+    });
+  }
+
+  // Reembolsar pago
+  async refundPayment(id, reason) {
+    return this.request(`/payments/${id}/refund`, {
+      method: "PATCH",
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  // Descargar comprobante PDF
+  async downloadReceipt(paymentId) {
+    const token = this.getToken();
+    const response = await fetch(`${this.baseURL}/payments/${paymentId}/receipt`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Error al descargar comprobante");
+    }
+
+    return response.blob();
+  }
 }
 
 export const api = new ApiService();

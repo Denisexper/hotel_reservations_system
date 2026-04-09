@@ -44,7 +44,10 @@ const resourceConfig = {
             { path: 'reservation', select: 'reservationCode' },
             { path: 'processedBy', select: 'name' }
         ],
-        getDisplayName: (doc) => doc.transactionId
+        getDisplayName: (doc) => {
+            const clientName = doc.reservation?.client?.name || '';
+            return clientName ? `${doc.transactionId} - ${clientName}` : doc.transactionId;
+        }
     },
     seasonal_prices: {
         displayFields: ['seasonName', 'startDate', 'endDate', 'modifierType', 'modifierValue', 'roomType'],

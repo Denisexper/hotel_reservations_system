@@ -158,7 +158,7 @@ export class ReservationController {
                 return res.status(409).json({ msj: "Habitación ocupada en esas fechas" });
             }
 
-            let nights = end.diff(start, 'day');
+            let nights = dayjs(checkOut).startOf('day').diff(dayjs(checkIn).startOf('day'), 'day');
             if (nights <= 0) nights = 1;
 
             const { SeasonalPrice } = await import('../models/seasonalPrice.model.js');
@@ -271,7 +271,7 @@ export class ReservationController {
                 const isAvailable = await Reservation.checkAvailability(existingReservation.room, start.toDate(), end.toDate(), id);
                 if (!isAvailable) return res.status(409).json({ msj: "Conflicto de fechas con otra reserva" });
 
-                let nights = end.diff(start, 'day');
+                let nights = dayjs(checkOut).startOf('day').diff(dayjs(checkIn).startOf('day'), 'day');
                 if (nights <= 0) nights = 1;
 
                 updateData.checkIn = start.toDate();
@@ -324,8 +324,8 @@ export class ReservationController {
                 return res.status(400).json({ msj: "No se puede cancelar esta reserva" });
             }
 
-            // Calcular penalización
-            const cancellationFee = reservation.calculateCancellationFee();
+            // Calcular penalización solo si ya había pagado (si no, no hay nada que reembolsar ni penalizar)
+            const cancellationFee = reservation.paymentStatus === 'pagado' ? reservation.calculateCancellationFee() : 0;
 
             // Si ya había pagado, procesar reembolso automático
             let refundPayment = null;
