@@ -56,7 +56,7 @@ const routes = [
         permission: PERMISSIONS.ROOMS_DELETE,
         description: 'Eliminar habitación',
         handler: controller.deleteRoom,
-        middlewares: [logAction('delete', 'rooms')]
+        middlewares: [logAction('update', 'rooms')]
     },
     {
         method: 'DELETE',

@@ -276,6 +276,15 @@ class ApiService {
     });
   }
 
+  // Reactivar habitación (isActive: true)
+  async reactivateRoom(id) {
+    return this.requestFormData(`/rooms/${id}`, (() => {
+      const fd = new FormData();
+      fd.append("isActive", "true");
+      return fd;
+    })(), "PUT");
+  }
+
   // Eliminar una imagen específica de una habitación
   async deleteRoomImage(roomId, imageIndex) {
     return this.request(`/rooms/${roomId}/images/${imageIndex}`, {

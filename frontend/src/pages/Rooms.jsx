@@ -44,6 +44,9 @@ function Rooms() {
   const [currentPage, setCurrentPage] = createSignal(1);
   const [limit] = createSignal(10);
 
+  // Vista activas / desactivadas
+  const [viewingInactive, setViewingInactive] = createSignal(false);
+
   // Filtros (inputs)
   const [typeInput, setTypeInput] = createSignal("");
   const [statusInput, setStatusInput] = createSignal("");
@@ -64,8 +67,9 @@ function Rooms() {
       ...appliedFilters(),
       page: currentPage(),
       limit: limit(),
+      viewingInactive: viewingInactive(),
     }),
-    (params) => {
+    async (params) => {
       const filters = {};
       if (params.type) filters.type = params.type;
       if (params.status) filters.status = params.status;
@@ -73,7 +77,25 @@ function Rooms() {
       if (params.maxPrice) filters.maxPrice = params.maxPrice;
       filters.page = params.page;
       filters.limit = params.limit;
-      return api.getRooms(filters);
+
+      if (params.viewingInactive) {
+        // Pedimos todas (incluye inactivas) y filtramos solo las desactivadas
+        filters.includeInactive = "true";
+      }
+
+      const result = await api.getRooms(filters);
+
+      // Si estamos viendo inactivas, filtrar solo las que tienen isActive = false
+      if (params.viewingInactive && result.data) {
+        const inactiveRooms = result.data.filter((room) => !room.isActive);
+        return {
+          ...result,
+          data: inactiveRooms,
+          total: inactiveRooms.length,
+        };
+      }
+
+      return result;
     },
   );
 
@@ -276,6 +298,29 @@ function Rooms() {
     );
   };
 
+  // Reactivar habitación
+  const handleReactivate = (room) => {
+    showToast.confirm(
+      `¿Reactivar la habitación ${room.roomNumber}?`,
+      async () => {
+        try {
+          await api.reactivateRoom(room._id);
+          refetch();
+          showToast.success("Habitación reactivada correctamente");
+        } catch (error) {
+          showToast.error(error.message);
+        }
+      },
+    );
+  };
+
+  // Cambiar entre vista activas/inactivas
+  const toggleView = (inactive) => {
+    setViewingInactive(inactive);
+    setCurrentPage(1);
+    clearFilters();
+  };
+
   // Abrir galería
   const openGallery = (room, index = 0) => {
     setGalleryRoom(room);
@@ -340,12 +385,38 @@ function Rooms() {
                 Gestiona las habitaciones del hotel
               </p>
             </div>
-            <Show when={auth.hasPermission("rooms.create")}>
+            <Show when={auth.hasPermission("rooms.create") && !viewingInactive()}>
               <button onClick={openCreate} class="btn-primary">
                 + Nueva habitación
               </button>
             </Show>
           </div>
+
+          {/* Tabs: Activas / Desactivadas */}
+          <Show when={auth.hasPermission("rooms.delete")}>
+            <div class="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-800/50 rounded-lg p-1 w-fit">
+              <button
+                onClick={() => toggleView(false)}
+                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  !viewingInactive()
+                    ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                Activas
+              </button>
+              <button
+                onClick={() => toggleView(true)}
+                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewingInactive()
+                    ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                Desactivadas
+              </button>
+            </div>
+          </Show>
 
           {/* Filtros */}
           <div class="card mb-6">
@@ -429,7 +500,9 @@ function Rooms() {
                 when={rooms()?.data?.length > 0}
                 fallback={
                   <div class="p-8 text-center text-gray-500 dark:text-gray-400">
-                    No se encontraron habitaciones
+                    {viewingInactive()
+                      ? "No hay habitaciones desactivadas"
+                      : "No se encontraron habitaciones"}
                   </div>
                 }
               >
@@ -588,16 +661,30 @@ function Rooms() {
                                     </button>
                                   </Show>
 
-                                  {/* Desactivar */}
+                                  {/* Desactivar / Reactivar */}
                                   <Show when={auth.hasPermission("rooms.delete")}>
-                                    <button
-                                      onClick={() => handleDelete(room)}
-                                      class="text-xs px-3 py-1.5 rounded-md border border-red-200 
-                                               dark:border-red-500/30 text-red-600 dark:text-red-400
-                                               hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                    <Show
+                                      when={!viewingInactive()}
+                                      fallback={
+                                        <button
+                                          onClick={() => handleReactivate(room)}
+                                          class="text-xs px-3 py-1.5 rounded-md border border-green-200 
+                                                   dark:border-green-500/30 text-green-600 dark:text-green-400
+                                                   hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors"
+                                        >
+                                          Reactivar
+                                        </button>
+                                      }
                                     >
-                                      Desactivar
-                                    </button>
+                                      <button
+                                        onClick={() => handleDelete(room)}
+                                        class="text-xs px-3 py-1.5 rounded-md border border-red-200 
+                                                 dark:border-red-500/30 text-red-600 dark:text-red-400
+                                                 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                      >
+                                        Desactivar
+                                      </button>
+                                    </Show>
                                   </Show>
                                 </div>
                               </td>

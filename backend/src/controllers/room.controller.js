@@ -7,7 +7,18 @@ export class RoomController {
         try {
             const { type, status, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
 
-            const filter = { isActive: true };
+            const filter = {};
+
+            if (req.query.includeInactive === 'true') {
+                // Si además viene isActive específico, filtrar por ese valor
+                if (req.query.isActive !== undefined) {
+                    filter.isActive = req.query.isActive === 'true';
+                }
+                // Si no viene isActive, no agrega filtro → devuelve todas
+            } else {
+                filter.isActive = true;
+            }
+
             if (type) filter.type = type;
             if (status) filter.status = status;
             if (minPrice || maxPrice) {
