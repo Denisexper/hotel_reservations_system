@@ -24,7 +24,7 @@ const resourceConfig = {
         getDisplayName: (doc) => doc.name
     },
     rooms: {
-        displayFields: ['roomNumber', 'type', 'basePrice', 'status', 'capacity'],
+        displayFields: ['roomNumber', 'type', 'basePrice', 'status', 'capacity', 'isActive'],
         populateFields: [],
         getDisplayName: (doc) => `Habitación ${doc.roomNumber}`
     },

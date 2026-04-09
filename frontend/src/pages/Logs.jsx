@@ -680,46 +680,45 @@ function Logs() {
               </Show>
 
               {/* DELETE */}
-              <Show
-                when={
-                  selectedLog()?.action === "delete" &&
-                  selectedLog()?.dataBefore
-                }
-              >
+              <Show when={selectedLog()?.action === "delete" && selectedLog()?.dataBefore}>
                 <div class="bg-red-50 dark:bg-red-500/10 rounded-lg p-4 space-y-2">
                   <p class="text-xs font-semibold text-red-700 dark:text-red-400 mb-3">
-                    Usuario eliminado:
+                    {selectedLog()?.resource === 'users' && 'Usuario eliminado:'}
+                    {selectedLog()?.resource === 'rooms' && 'Habitación desactivada:'}
+                    {selectedLog()?.resource === 'reservations' && 'Reserva eliminada:'}
+                    {selectedLog()?.resource === 'payments' && 'Pago eliminado:'}
+                    {selectedLog()?.resource === 'maintenance' && 'Ticket eliminado:'}
+                    {selectedLog()?.resource === 'seasonal_prices' && 'Temporada eliminada:'}
                   </p>
-                  <Show when={selectedLog()?.dataBefore.name}>
-                    <div class="flex justify-between">
-                      <span class="text-sm text-gray-600 dark:text-gray-400">
-                        Nombre:
-                      </span>
-                      <span class="text-sm font-medium text-gray-900 dark:text-white">
-                        {selectedLog()?.dataBefore.name}
-                      </span>
-                    </div>
-                  </Show>
-                  <Show when={selectedLog()?.dataBefore.email}>
-                    <div class="flex justify-between">
-                      <span class="text-sm text-gray-600 dark:text-gray-400">
-                        Email:
-                      </span>
-                      <span class="text-sm font-medium text-gray-900 dark:text-white">
-                        {selectedLog()?.dataBefore.email}
-                      </span>
-                    </div>
-                  </Show>
-                  <Show when={selectedLog()?.dataBefore.role}>
-                    <div class="flex justify-between">
-                      <span class="text-sm text-gray-600 dark:text-gray-400">
-                        Rol:
-                      </span>
-                      <span class="text-sm font-medium text-gray-900 dark:text-white">
-                        {selectedLog()?.dataBefore.role}
-                      </span>
-                    </div>
-                  </Show>
+
+                  <For each={Object.keys(selectedLog()?.dataBefore || {})}>
+                    {(key) => (
+                      <Show when={selectedLog()?.dataBefore[key] !== null && selectedLog()?.dataBefore[key] !== undefined}>
+                        <div class="flex justify-between">
+                          <span class="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                            {key === 'name' && 'Nombre'}
+                            {key === 'email' && 'Email'}
+                            {key === 'role' && 'Rol'}
+                            {key === 'isActive' && 'Estado'}
+                            {key === 'roomNumber' && 'Número'}
+                            {key === 'type' && 'Tipo'}
+                            {key === 'basePrice' && 'Precio Base'}
+                            {key === 'status' && 'Estado'}
+                            {key === 'capacity' && 'Capacidad'}
+                            {!['name', 'email', 'role', 'isActive', 'roomNumber', 'type', 'basePrice', 'status', 'capacity'].includes(key) && key}
+                            :
+                          </span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            {key === 'isActive'
+                              ? selectedLog()?.dataBefore[key] ? 'Activo' : 'Inactivo'
+                              : key === 'basePrice'
+                                ? `$${selectedLog()?.dataBefore[key]}`
+                                : String(selectedLog()?.dataBefore[key])}
+                          </span>
+                        </div>
+                      </Show>
+                    )}
+                  </For>
                 </div>
               </Show>
             </div>

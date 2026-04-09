@@ -45,6 +45,36 @@ class ApiService {
     }
   }
 
+  // Método para enviar FormData (imágenes + datos)
+  // No envía Content-Type para que el browser ponga multipart/form-data con boundary
+  async requestFormData(endpoint, formData, method = "POST") {
+    const token = this.getToken();
+
+    const headers = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method,
+        headers,
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.msj || "Error en la petición");
+      }
+
+      return data;
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  }
+
   // Auth
   async login(email, password) {
     const data = await this.request("/login", {
@@ -214,10 +244,49 @@ class ApiService {
     });
   }
 
-  //filtros de usuarios
-  async getUsers(filters = {}) {
+  // ============================================
+  // ROOMS (Habitaciones)
+  // ============================================
+
+  // Listar habitaciones con filtros y paginación
+  async getRooms(filters = {}) {
     const params = new URLSearchParams(filters).toString();
-    return this.request(`/users${params ? `?${params}` : ""}`);
+    return this.request(`/rooms${params ? `?${params}` : ""}`);
+  }
+
+  // Obtener una habitación por ID
+  async getRoom(id) {
+    return this.request(`/rooms/${id}`);
+  }
+
+  // Crear habitación (con imágenes via FormData)
+  async createRoom(formData) {
+    return this.requestFormData("/rooms", formData, "POST");
+  }
+
+  // Actualizar habitación (con imágenes opcionales via FormData)
+  async updateRoom(id, formData) {
+    return this.requestFormData(`/rooms/${id}`, formData, "PUT");
+  }
+
+  // Eliminar habitación (soft delete)
+  async deleteRoom(id) {
+    return this.request(`/rooms/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Eliminar una imagen específica de una habitación
+  async deleteRoomImage(roomId, imageIndex) {
+    return this.request(`/rooms/${roomId}/images/${imageIndex}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Buscar habitaciones disponibles (para reservas)
+  async searchAvailableRooms(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    return this.request(`/rooms/available${params ? `?${params}` : ""}`);
   }
 }
 
