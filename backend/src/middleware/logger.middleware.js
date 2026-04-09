@@ -34,7 +34,9 @@ const resourceConfig = {
             { path: 'client', select: 'name email' },
             { path: 'room', select: 'roomNumber type' }
         ],
-        getDisplayName: (doc) => doc.reservationCode
+        getDisplayName: (doc) => doc.client?.name
+            ? `${doc.reservationCode} - ${doc.client.name}`
+            : doc.reservationCode
     },
     payments: {
         displayFields: ['amount', 'paymentMethod', 'status', 'receiptNumber', 'transactionId'],

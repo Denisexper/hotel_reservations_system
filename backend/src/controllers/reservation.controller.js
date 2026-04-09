@@ -101,7 +101,34 @@ export class ReservationController {
     async createReservation(req, res) {
         try {
             const { room, checkIn, checkOut, numberOfGuests, specialRequests } = req.body;
-            const userId = req.user.id; // Del token JWT
+
+            // Determinar el cliente de la reserva
+            const canCreateForOthers = req.user.permissions.includes('reservations.create_others');
+            let userId;
+
+            if (canCreateForOthers && req.body.clientEmail) {
+                const { userModel } = await import('../models/user.model.js');
+                let client = await userModel.findOne({ email: req.body.clientEmail });
+
+                if (!client) {
+                    const { Role } = await import('../models/role.model.js');
+                    const clientRole = await Role.findOne({ name: 'cliente' });
+                    const bcrypt = await import('bcrypt');
+                    const tempPassword = await bcrypt.hash(req.body.clientEmail, 10);
+
+                    client = await userModel.create({
+                        name: req.body.clientName || 'Cliente',
+                        email: req.body.clientEmail,
+                        phone: req.body.clientPhone || null,
+                        password: tempPassword,
+                        role: clientRole._id,
+                        isActive: true
+                    });
+                }
+                userId = client._id;
+            } else {
+                userId = req.user.id;
+            }
 
             const start = dayjs(checkIn).startOf('day').add(15, 'hour');
             const end = dayjs(checkOut).startOf('day').add(11, 'hour');
@@ -156,7 +183,7 @@ export class ReservationController {
                 pricePerNight: priceSnapshot,
                 totalAmount,
                 specialRequests,
-                createdBy: userId
+                createdBy: req.user.id,
             });
 
             await newReservation.populate([

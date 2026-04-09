@@ -35,6 +35,7 @@ export const PERMISSIONS = {
     MAINTENANCE_CREATE: 'maintenance.create',
     MAINTENANCE_UPDATE: 'maintenance.update',
     MAINTENANCE_DELETE: 'maintenance.delete',
+    RESERVATIONS_CREATE_OTHERS: 'reservations.create_others',
 };
 
 export const seedRoles = async () => {
@@ -103,6 +104,7 @@ export const seedRoles = async () => {
                     PERMISSIONS.MAINTENANCE_CREATE,
                     PERMISSIONS.MAINTENANCE_UPDATE,
                     PERMISSIONS.MAINTENANCE_DELETE,
+                    PERMISSIONS.RESERVATIONS_CREATE_OTHERS
                 ],
                 isSystem: true
             },
@@ -128,6 +130,7 @@ export const seedRoles = async () => {
                     PERMISSIONS.DASHBOARD_STATS,
                     PERMISSIONS.MAINTENANCE_CREATE,
                     PERMISSIONS.MAINTENANCE_READ,
+                    PERMISSIONS.RESERVATIONS_CREATE_OTHERS,
                 ],
                 isSystem: true
             },
