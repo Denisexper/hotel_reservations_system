@@ -506,6 +506,43 @@ class ApiService {
     const params = new URLSearchParams({ roomId, checkIn }).toString();
     return this.request(`/seasonal-prices/check-price?${params}`);
   }
+
+  // ============================================
+  // MAINTENANCE (Mantenimiento)
+  // ============================================
+
+  async getMaintenanceTickets(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    return this.request(`/maintenance${params ? `?${params}` : ""}`);
+  }
+
+  async getMaintenanceTicket(id) {
+    return this.request(`/maintenance/${id}`);
+  }
+
+  async getMaintenanceByRoom(roomId) {
+    return this.request(`/maintenance/room/${roomId}`);
+  }
+
+  async createMaintenanceTicket(data) {
+    return this.request("/maintenance", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateMaintenanceTicket(id, data) {
+    return this.request(`/maintenance/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteMaintenanceTicket(id) {
+    return this.request(`/maintenance/${id}`, {
+      method: "DELETE",
+    });
+  }
 }
 
 export const api = new ApiService();

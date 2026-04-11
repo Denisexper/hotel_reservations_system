@@ -123,6 +123,21 @@ export class RoomController {
                 updateData.images = [...existingRoom.images, ...newImagesPaths];
             }
 
+            // Si intenta poner disponible, verificar que no tenga tickets abiertos
+            if (updateData.status === 'disponible') {
+                const { MaintenanceLog } = await import('../models/maintenanceLog.model.js');
+                const openTickets = await MaintenanceLog.countDocuments({
+                    room: id,
+                    status: { $in: ['reportado', 'en_proceso'] }
+                });
+
+                if (openTickets > 0) {
+                    return res.status(400).json({
+                        msj: `No se puede cambiar a disponible. Hay ${openTickets} ticket(s) de mantenimiento abierto(s). Resuélvelos primero desde el módulo de Mantenimiento.`
+                    });
+                }
+            }
+
             const updatedRoom = await Room.findByIdAndUpdate(id, updateData, {
                 new: true,
                 runValidators: true

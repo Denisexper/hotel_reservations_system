@@ -15,6 +15,7 @@ const Reservations = lazy(() => import("./pages/Reservations"));
 const Payments = lazy(() => import("./pages/Payments"));
 const HotelReports = lazy(() => import("./pages/HotelReports"));
 const SeasonalPrices = lazy(() => import("./pages/SeasonalPrices"));
+const Maintenance = lazy(() => import("./pages/Maintenance"));
 
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
           <Route path="/payments" component={Payments} />
           <Route path="/hotel-reports" component={HotelReports} />
           <Route path="/seasonal-prices" component={SeasonalPrices} />
+          <Route path="/maintenance" component={Maintenance} />
           <Route path="/" component={Login} />
         </SolidRouter>
       </AuthProvider>
