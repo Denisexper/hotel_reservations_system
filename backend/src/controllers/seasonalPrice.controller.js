@@ -67,6 +67,14 @@ export class SeasonalPriceController {
                 createdBy: req.user.id
             };
 
+            // Normalizar fechas para evitar desfase de timezone
+            if (seasonData.startDate) {
+                seasonData.startDate = new Date(seasonData.startDate + "T12:00:00");
+            }
+            if (seasonData.endDate) {
+                seasonData.endDate = new Date(seasonData.endDate + "T12:00:00");
+            }
+
             const newSeason = await SeasonalPrice.create(seasonData);
             await newSeason.populate('createdBy', 'name email');
 
@@ -83,8 +91,16 @@ export class SeasonalPriceController {
     async updateSeason(req, res) {
         try {
             const { id } = req.params;
+            const updateData = { ...req.body };
 
-            const updatedSeason = await SeasonalPrice.findByIdAndUpdate(id, req.body, {
+            if (updateData.startDate) {
+                updateData.startDate = new Date(updateData.startDate + "T12:00:00");
+            }
+            if (updateData.endDate) {
+                updateData.endDate = new Date(updateData.endDate + "T12:00:00");
+            }
+
+            const updatedSeason = await SeasonalPrice.findByIdAndUpdate(id, updateData, {
                 new: true,
                 runValidators: true
             }).populate('createdBy', 'name email');

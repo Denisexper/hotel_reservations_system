@@ -89,7 +89,7 @@ function Sidebar() {
             solo falta agregar los permisos a las rutas del backend y listo se van a mostrar automaticamente en el sidebar sin necesidad de tocar nada mas.*/}
 
         {/* Rooms Solo si tiene permiso */}
-        <Show when={auth.hasPermission('rooms.read')}> 
+        <Show when={auth.hasPermission('rooms.read')}>
           <A href="/rooms" class={navLinkClass('/rooms')}>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -132,11 +132,22 @@ function Sidebar() {
           </A>
         </Show>
 
+        {/* Temporadas de Precios - Solo admin/gerente */}
+        <Show when={auth.hasPermission('rooms.create')}>
+          <A href="/seasonal-prices" class={navLinkClass('/seasonal-prices')}>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            Temporadas
+          </A>
+        </Show>
+
       </nav>
 
       {/* Footer: Avatar + Theme */}
       <div class="px-3 py-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
-        
+
         {/* Theme toggle */}
         <div class="flex items-center justify-between px-4">
           <span class="text-xs text-gray-500 dark:text-gray-400">Tema</span>

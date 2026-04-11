@@ -468,6 +468,44 @@ class ApiService {
     if (!response.ok) throw new Error("Error al exportar PDF");
     return response.blob();
   }
+
+  // ============================================
+  // SEASONAL PRICES (Temporadas de Precios)
+  // ============================================
+
+  async getSeasonalPrices(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    return this.request(`/seasonal-prices${params ? `?${params}` : ""}`);
+  }
+
+  async getSeasonalPrice(id) {
+    return this.request(`/seasonal-prices/${id}`);
+  }
+
+  async createSeasonalPrice(data) {
+    return this.request("/seasonal-prices", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSeasonalPrice(id, data) {
+    return this.request(`/seasonal-prices/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSeasonalPrice(id) {
+    return this.request(`/seasonal-prices/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async checkSeasonalPrice(roomId, checkIn) {
+    const params = new URLSearchParams({ roomId, checkIn }).toString();
+    return this.request(`/seasonal-prices/check-price?${params}`);
+  }
 }
 
 export const api = new ApiService();

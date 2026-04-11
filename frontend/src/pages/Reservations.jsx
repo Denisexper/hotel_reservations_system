@@ -426,8 +426,8 @@ function Reservations() {
               <button
                 onClick={() => switchTab("all")}
                 class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab() === "all"
-                    ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                   }`}
               >
                 Todas las reservas
@@ -435,8 +435,8 @@ function Reservations() {
               <button
                 onClick={() => switchTab("my")}
                 class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab() === "my"
-                    ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                   }`}
               >
                 Mis reservas
@@ -891,8 +891,8 @@ function Reservations() {
                   ]}>
                     {(step) => (
                       <div class={`flex-1 h-1.5 rounded-full transition-colors ${createStep() >= step.n
-                          ? "bg-blue-500"
-                          : "bg-gray-200 dark:bg-gray-700"
+                        ? "bg-blue-500"
+                        : "bg-gray-200 dark:bg-gray-700"
                         }`} />
                     )}
                   </For>
@@ -1055,9 +1055,9 @@ function Reservations() {
                                     <span class="text-xs line-through text-gray-400">
                                       {formatPrice(room.basePrice)}
                                     </span>
-                                    <Show when={room.season}>
+                                    <Show when={room.season?.name || (typeof room.season === "string" && room.season)}>
                                       <span class="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded">
-                                        {room.season}
+                                        {room.season?.name || room.season}
                                       </span>
                                     </Show>
                                   </Show>
