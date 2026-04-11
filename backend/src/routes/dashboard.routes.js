@@ -7,6 +7,13 @@ import { PERMISSIONS } from '../db/seedRoles.js';
 const router = Router();
 const controller = new DashboardController();
 
+// Bindear todos los métodos
+Object.getOwnPropertyNames(DashboardController.prototype).forEach(method => {
+    if (method !== 'constructor') {
+        controller[method] = controller[method].bind(controller);
+    }
+});
+
 const routes = [
     {
         method: 'GET',
