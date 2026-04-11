@@ -415,6 +415,59 @@ class ApiService {
 
     return response.blob();
   }
+
+
+  // ============================================
+  // DASHBOARD
+  // ============================================
+
+  async getDashboardStats() {
+    return this.request("/dashboard/stats");
+  }
+
+  async getDashboardRevenue(period = "monthly", year = new Date().getFullYear()) {
+    return this.request(`/dashboard/revenue?period=${period}&year=${year}`);
+  }
+
+  async getDashboardReservationsByStatus() {
+    return this.request("/dashboard/reservations-by-status");
+  }
+
+  async getDashboardTopRooms(limit = 5) {
+    return this.request(`/dashboard/top-rooms?limit=${limit}`);
+  }
+
+  async getDashboardToday() {
+    return this.request("/dashboard/today");
+  }
+
+  async getDashboardOccupancy(days = 30) {
+    return this.request(`/dashboard/occupancy?days=${days}`);
+  }
+
+  async getDashboardRevenueByMethod() {
+    return this.request("/dashboard/revenue-by-method");
+  }
+
+  async exportDashboardExcel() {
+    const token = this.getToken();
+    const response = await fetch(`${this.baseURL}/dashboard/export/excel`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Error al exportar Excel");
+    return response.blob();
+  }
+
+  async exportDashboardPDF() {
+    const token = this.getToken();
+    const response = await fetch(`${this.baseURL}/dashboard/export/pdf`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("Error al exportar PDF");
+    return response.blob();
+  }
 }
 
 export const api = new ApiService();

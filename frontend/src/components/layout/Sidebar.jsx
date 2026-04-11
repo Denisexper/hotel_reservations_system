@@ -122,7 +122,7 @@ function Sidebar() {
         </Show>
 
         {/* Hotel Reports Solo si tiene permiso */}
-        <Show when={auth.hasPermission('hotel-reports.read')}>
+        <Show when={auth.hasPermission('hotel_reports.read')}>
           <A href="/hotel-reports" class={navLinkClass('/hotel-reports')}>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
