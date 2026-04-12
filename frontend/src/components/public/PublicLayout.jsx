@@ -1,6 +1,7 @@
 import { A, useNavigate } from "@solidjs/router";
 import { useAuth } from "../../context/AuthContext";
 import { createSignal, onMount, onCleanup, Show } from "solid-js";
+import hotelLogo from "../../assets/hotel_icon.png";
 
 const BACKEND_URL = "http://localhost:4000";
 
@@ -53,7 +54,7 @@ function PublicLayout(props) {
                                     ? "bg-[#1a1a2e]"
                                     : "bg-white/20 backdrop-blur-sm"
                                 }`}>
-                                <span class="text-white font-bold text-lg" style={{ "font-family": "'Cormorant Garamond', serif" }}>H</span>
+                                <img src={hotelLogo} alt="Logo" class="w-6 h-6 object-contain" />
                             </div>
                             <div>
                                 <p class={`text-lg font-semibold tracking-wide transition-colors ${scrolled() || !isLanding() ? "text-[#1a1a2e] dark:text-white" : "text-white"
@@ -195,7 +196,7 @@ function PublicLayout(props) {
                         <div class="md:col-span-2">
                             <div class="flex items-center gap-3 mb-4">
                                 <div class="w-10 h-10 rounded-lg bg-[#c9a84c] flex items-center justify-center">
-                                    <span class="text-white font-bold text-lg" style={{ "font-family": "'Cormorant Garamond', serif" }}>H</span>
+                                    <img src={hotelLogo} alt="Logo" class="w-6 h-6 object-contain" />
                                 </div>
                                 <p class="text-xl font-semibold tracking-wide" style={{ "font-family": "'Cormorant Garamond', serif" }}>
                                     Hotel Reservations
@@ -228,7 +229,7 @@ function PublicLayout(props) {
                             <div class="space-y-3 text-sm text-gray-400">
                                 <p class="flex items-center gap-2">
                                     <svg class="w-4 h-4 text-[#c9a84c]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                    Blvd. de los Héroes, San Salvador
+                                    Playa El Cuco, San Miguel, San Salvador
                                 </p>
                                 <p class="flex items-center gap-2">
                                     <svg class="w-4 h-4 text-[#c9a84c]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
