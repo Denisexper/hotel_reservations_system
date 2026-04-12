@@ -2,9 +2,18 @@ import { useAuth } from '../context/AuthContext';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Layout from '../components/layout/Layout';
 import { Show } from 'solid-js';
+import { useNavigate } from '@solidjs/router';
 
 function Dashboard() {
   const auth = useAuth();
+
+  const navigate = useNavigate();
+
+  // Si es cliente, redirigir a la landing
+  if (auth.user()?.role === "cliente") {
+    navigate("/");
+    return null;
+  }
 
   return (
     <ProtectedRoute>

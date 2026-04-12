@@ -21,6 +21,9 @@ const Maintenance = lazy(() => import("./pages/Maintenance"));
 const Landing = lazy(() => import("./pages/public/Landing"));
 const SearchRooms = lazy(() => import("./pages/public/SearchRooms"));
 const RoomDetail = lazy(() => import("./pages/public/RoomDetail"));
+const ClientLogin = lazy(() => import("./pages/public/ClientLogin"));
+const ClientRegister = lazy(() => import("./pages/public/ClientRegister"));
+const ClientReservations = lazy(() => import("./pages/public/ClientReservations"));
 
 
 function App() {
@@ -30,7 +33,7 @@ function App() {
         <Toaster position="top-right" richColors closeButton expand={false} />
         <SolidRouter>
           <Route path="/login" component={Login} />
-          <Route path="/register" component={Register} />
+          {/* <Route path="/register" component={Register} /> */} //no se puede registrar un nuevo admin desde el frontend, solo clientes
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/users" component={Users} />
           <Route path="/logs" component={Logs} />
@@ -45,7 +48,10 @@ function App() {
           <Route path="/" component={Landing} />
           <Route path="/search" component={SearchRooms} />
           <Route path="/room/:id" component={RoomDetail} />
-          
+          <Route path="/client-login" component={ClientLogin} />
+          <Route path="/client-register" component={ClientRegister} />
+          <Route path="/my-reservations" component={ClientReservations} />
+
           {/* <Route path="/" component={Login} /> */}
         </SolidRouter>
       </AuthProvider>

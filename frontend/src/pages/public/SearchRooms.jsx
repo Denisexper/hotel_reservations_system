@@ -81,7 +81,7 @@ function SearchRooms() {
     const handleBooking = (room) => {
         if (!auth.isAuthenticated()) {
             const returnUrl = `/room/${room._id}?checkIn=${checkIn()}&checkOut=${checkOut()}&guests=${guests()}`;
-            navigate(`/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+            navigate(`/client-login?returnUrl=${encodeURIComponent(returnUrl)}`);
             return;
         }
         navigate(`/room/${room._id}?checkIn=${checkIn()}&checkOut=${checkOut()}&guests=${guests()}`);

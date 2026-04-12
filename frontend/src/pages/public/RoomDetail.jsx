@@ -92,7 +92,7 @@ function RoomDetail() {
     const handleBooking = async () => {
         if (!auth.isAuthenticated()) {
             const returnUrl = `/room/${params.id}?checkIn=${checkIn()}&checkOut=${checkOut()}&guests=${guests()}`;
-            navigate(`/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+            navigate(`/client-login?returnUrl=${encodeURIComponent(returnUrl)}`);
             return;
         }
 
@@ -105,7 +105,7 @@ function RoomDetail() {
                 numberOfGuests: guests(),
             });
             showToast.success("Reserva creada exitosamente");
-            navigate("/reservations");
+            navigate("/my-reservations");
         } catch (error) {
             showToast.error(error.message);
         }

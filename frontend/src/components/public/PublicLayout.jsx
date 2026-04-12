@@ -82,7 +82,7 @@ function PublicLayout(props) {
 
                             <Show when={auth.isAuthenticated()}>
                                 <A
-                                    href="/reservations"
+                                    href="/my-reservations"
                                     class={`text-sm font-medium tracking-wide transition-colors hover:opacity-80 ${scrolled() || !isLanding() ? "text-gray-700 dark:text-gray-300" : "text-white/90"
                                         }`}
                                 >
@@ -96,14 +96,14 @@ function PublicLayout(props) {
                                 fallback={
                                     <div class="flex items-center gap-3">
                                         <A
-                                            href="/login"
+                                            href="/client-login"
                                             class={`text-sm font-medium tracking-wide transition-colors ${scrolled() || !isLanding() ? "text-gray-700 dark:text-gray-300" : "text-white/90"
                                                 }`}
                                         >
                                             Iniciar Sesión
                                         </A>
                                         <A
-                                            href="/register"
+                                            href="/client-register"
                                             class="text-sm font-medium px-5 py-2.5 rounded-lg bg-[#c9a84c] text-white hover:bg-[#b8963f] transition-colors tracking-wide"
                                         >
                                             Registrarse
@@ -134,14 +134,7 @@ function PublicLayout(props) {
                                             style={{ "font-family": "'Montserrat', sans-serif" }}
                                         >
                                             <A
-                                                href="/dashboard"
-                                                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                                onClick={() => setUserDropdown(false)}
-                                            >
-                                                Panel de Control
-                                            </A>
-                                            <A
-                                                href="/reservations"
+                                                href="/my-reservations"
                                                 class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                                                 onClick={() => setUserDropdown(false)}
                                             >
@@ -178,7 +171,6 @@ function PublicLayout(props) {
                             <A href="/search" class="block py-2 text-sm text-gray-700 dark:text-gray-300" onClick={() => setMobileMenu(false)}>Habitaciones</A>
                             <Show when={auth.isAuthenticated()}>
                                 <A href="/reservations" class="block py-2 text-sm text-gray-700 dark:text-gray-300" onClick={() => setMobileMenu(false)}>Mis Reservas</A>
-                                <A href="/dashboard" class="block py-2 text-sm text-gray-700 dark:text-gray-300" onClick={() => setMobileMenu(false)}>Panel de Control</A>
                                 <button onClick={handleLogout} class="block py-2 text-sm text-red-600">Cerrar Sesión</button>
                             </Show>
                             <Show when={!auth.isAuthenticated()}>
