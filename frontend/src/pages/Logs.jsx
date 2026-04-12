@@ -190,7 +190,8 @@ function Logs() {
       rooms: { create: 'Habitación creada', update: 'Habitación actualizada', delete: 'Habitación eliminada' },
       reservations: { create: 'Reserva creada', update: 'Reserva actualizada', delete: 'Reserva eliminada' },
       payments: { create: 'Pago registrado', update: 'Pago actualizado', delete: 'Pago eliminado' },
-      seasonal_prices: { create: 'Temporada creada', update: 'Temporada actualizada', delete: 'Temporada eliminada' }
+      seasonal_prices: { create: 'Temporada creada', update: 'Temporada actualizada', delete: 'Temporada eliminada' },
+      maintenance: { create: 'Ticket creado', update: 'Ticket actualizado', delete: 'Ticket eliminado' },
     };
     return labels[resource]?.[action] || `${action}`;
   };
@@ -234,8 +235,13 @@ function Logs() {
                 onChange={(e) => setFilterResource(e.target.value)}
               >
                 <option value="">Todos los recursos</option>
-                <option value="users">Users</option>
-                <option value="auth">Auth</option>
+                <option value="auth">Autenticación</option>
+                <option value="users">Usuarios</option>
+                <option value="rooms">Habitaciones</option>
+                <option value="reservations">Reservas</option>
+                <option value="payments">Pagos</option>
+                <option value="seasonal_prices">Temporadas</option>
+                <option value="maintenance">Mantenimiento</option>
                 <option value="logs">Logs</option>
               </select>
 
@@ -689,6 +695,7 @@ function Logs() {
                     {selectedLog()?.resource === 'payments' && 'Pago eliminado:'}
                     {selectedLog()?.resource === 'maintenance' && 'Ticket eliminado:'}
                     {selectedLog()?.resource === 'seasonal_prices' && 'Temporada eliminada:'}
+                    {selectedLog()?.resource === 'maintenance' && 'Ticket afectado:'}
                   </p>
 
                   <For each={Object.keys(selectedLog()?.dataBefore || {})}>

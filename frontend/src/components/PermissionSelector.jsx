@@ -135,10 +135,13 @@ function PermissionSelector(props) {
       users: "👥",
       roles: "🔐",
       logs: "📋",
-      products: "📦",
-      orders: "🛒",
-      reports: "📊",
-      settings: "⚙️",
+      rooms: "🏨",
+      reservations: "📅",
+      payments: "💳",
+      dashboard: "📊",
+      hotel_reports: "📈",
+      seasonal_prices: "🏷️",
+      maintenance: "🔧",
     };
     return emojis[resource] || "📁";
   };
@@ -186,11 +189,10 @@ function PermissionSelector(props) {
         <button
           type="button"
           onClick={() => setActiveTab("all")}
-          class={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-            activeTab() === "all"
+          class={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${activeTab() === "all"
               ? "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400"
               : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-          }`}
+            }`}
         >
           Todos
         </button>
@@ -199,11 +201,10 @@ function PermissionSelector(props) {
             <button
               type="button"
               onClick={() => setActiveTab(resource)}
-              class={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors capitalize ${
-                activeTab() === resource
+              class={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors capitalize ${activeTab() === resource
                   ? "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400"
                   : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
+                }`}
             >
               {getResourceEmoji(resource)} {resource}
             </button>

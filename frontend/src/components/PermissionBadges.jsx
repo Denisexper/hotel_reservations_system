@@ -5,7 +5,7 @@ function PermissionBadges(props) {
 
   const getPermissionInfo = (code) => {
     if (!props.availablePermissions) return null;
-    
+
     for (const [resource, perms] of Object.entries(props.availablePermissions)) {
       const perm = perms.find(p => p.code === code);
       if (perm) return { resource, ...perm };
@@ -18,12 +18,13 @@ function PermissionBadges(props) {
       users: "👥",
       roles: "🔐",
       logs: "📋",
-      products: "📦",
-      orders: "🛒",
-      reports: "📊",
-      settings: "⚙️",
-      invoices: "🧾",
-      clients: "👤"
+      rooms: "🏨",
+      reservations: "📅",
+      payments: "💳",
+      dashboard: "📊",
+      hotel_reports: "📈",
+      seasonal_prices: "🏷️",
+      maintenance: "🔧",
     };
     return emojis[resource] || "📁";
   };
