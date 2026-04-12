@@ -29,7 +29,7 @@ const routes = [
     {
         method: 'GET',
         path: '/available',
-        permission: PERMISSIONS.ROOMS_READ,
+        permission: null, // Sin permiso específico, solo autenticación esto para la landig page actualmente
         description: 'Buscar habitaciones disponibles por fechas',
         handler: controller.searchAvailable,
         middlewares: []
@@ -66,16 +66,14 @@ const routes = [
         handler: controller.deleteImage,
         middlewares: [logAction('update', 'rooms')]
     },
-    
+
 ];
 
 // Registro automático idéntico al tuyo
 routes.forEach(route => {
-    const allMiddlewares = [
-        authMiddleware,
-        checkPermission(route.permission),
-        ...route.middlewares
-    ];
+    const allMiddlewares = route.permission
+        ? [authMiddleware, checkPermission(route.permission), ...route.middlewares]
+        : [...route.middlewares];
 
     router[route.method.toLowerCase()](
         route.path,
