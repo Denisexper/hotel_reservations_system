@@ -5,7 +5,6 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { Toaster } from "solid-sonner";
 
 const Login = lazy(() => import("./pages/Login"));
-const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Users = lazy(() => import("./pages/Users"));
 const Logs = lazy(() => import("./pages/Logs"));
@@ -33,7 +32,6 @@ function App() {
         <Toaster position="top-right" richColors closeButton expand={false} />
         <SolidRouter>
           <Route path="/login" component={Login} />
-          {/* <Route path="/register" component={Register} /> */} //no se puede registrar un nuevo admin desde el frontend, solo clientes
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/users" component={Users} />
           <Route path="/logs" component={Logs} />

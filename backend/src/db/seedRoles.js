@@ -155,7 +155,6 @@ export const seedRoles = async () => {
                 description: 'Puede gestionar el estado de las habitaciones',
                 permissions: [
                     PERMISSIONS.ROOMS_READ,
-                    PERMISSIONS.ROOMS_UPDATE,
                     PERMISSIONS.DASHBOARD_VIEW,
                     PERMISSIONS.MAINTENANCE_READ,
                     PERMISSIONS.MAINTENANCE_CREATE,
