@@ -20,7 +20,7 @@ const routes = [
     {
         method: 'GET',
         path: '/check-price',
-        permission: PERMISSIONS.ROOMS_READ,
+        permission: null,     // Sin permiso específico, solo autenticación esto para la landig page actualmente
         description: 'Consultar precio ajustado por temporada',
         handler: controller.checkPrice,
         middlewares: []
@@ -60,11 +60,9 @@ const routes = [
 ];
 
 routes.forEach(route => {
-    const allMiddlewares = [
-        authMiddleware,
-        checkPermission(route.permission),
-        ...route.middlewares
-    ];
+    const allMiddlewares = route.permission
+        ? [authMiddleware, checkPermission(route.permission), ...route.middlewares]
+        : [...route.middlewares];
 
     router[route.method.toLowerCase()](
         route.path,

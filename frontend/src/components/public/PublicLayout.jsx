@@ -17,12 +17,30 @@ function PublicLayout(props) {
         setScrolled(window.scrollY > 50);
     };
 
+    // Cerrar dropdown al hacer click fuera
+    const handleClickOutside = (e) => {
+        if (userDropdown() && !e.target.closest('.user-dropdown-container')) {
+            setUserDropdown(false);
+        }
+    };
+
     onMount(() => {
         window.addEventListener("scroll", handleScroll);
+        document.addEventListener("click", handleClickOutside);
+
+        // Forzar modo claro en páginas públicas
+        document.documentElement.classList.remove("dark");
     });
 
     onCleanup(() => {
         window.removeEventListener("scroll", handleScroll);
+        document.removeEventListener("click", handleClickOutside);
+
+        // Restaurar preferencia de tema al salir
+        const saved = localStorage.getItem("theme");
+        if (saved === "dark") {
+            document.documentElement.classList.add("dark");
+        }
     });
 
     const handleLogout = async () => {
@@ -42,8 +60,8 @@ function PublicLayout(props) {
             {/* NAVBAR */}
             <nav
                 class={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled() || !isLanding()
-                        ? "bg-white/95 dark:bg-[#0a0a14]/95 backdrop-blur-md shadow-sm"
-                        : "bg-transparent"
+                    ? "bg-white/95 dark:bg-[#0a0a14]/95 backdrop-blur-md shadow-sm"
+                    : "bg-transparent"
                     }`}
             >
                 <div class="max-w-7xl mx-auto px-6 lg:px-8">
@@ -51,8 +69,8 @@ function PublicLayout(props) {
                         {/* Logo */}
                         <A href="/" class="flex items-center gap-3 group">
                             <div class={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${scrolled() || !isLanding()
-                                    ? "bg-[#1a1a2e]"
-                                    : "bg-white/20 backdrop-blur-sm"
+                                ? "bg-[#1a1a2e]"
+                                : "bg-white/20 backdrop-blur-sm"
                                 }`}>
                                 <img src={hotelLogo} alt="Logo" class="w-6 h-6 object-contain" />
                             </div>
@@ -113,7 +131,7 @@ function PublicLayout(props) {
                                 }
                             >
                                 {/* User dropdown */}
-                                <div class="relative">
+                                <div class="relative user-dropdown-container">
                                     <button
                                         onClick={() => setUserDropdown(!userDropdown())}
                                         class={`flex items-center gap-2 text-sm font-medium transition-colors ${scrolled() || !isLanding() ? "text-gray-700 dark:text-gray-300" : "text-white/90"

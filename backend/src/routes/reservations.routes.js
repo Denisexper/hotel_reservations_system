@@ -36,7 +36,7 @@ const routes = [
     {
         method: 'GET',
         path: '/check-availability',
-        permission: PERMISSIONS.RESERVATIONS_READ,
+        permission: null, // Sin permiso específico, solo autenticación esto para la landig page actualmente
         description: 'Verificar disponibilidad de una habitación',
         handler: controller.checkAvailability,
         middlewares: []
@@ -85,11 +85,9 @@ const routes = [
 
 // Registro automático idéntico al de tus otros módulos
 routes.forEach(route => {
-    const allMiddlewares = [
-        authMiddleware,
-        checkPermission(route.permission),
-        ...route.middlewares
-    ];
+    const allMiddlewares = route.permission
+        ? [authMiddleware, checkPermission(route.permission), ...route.middlewares]
+        : [...route.middlewares];
 
     router[route.method.toLowerCase()](
         route.path,

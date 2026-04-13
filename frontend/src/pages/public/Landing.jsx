@@ -1,33 +1,17 @@
-import { createSignal, onMount, For } from "solid-js";
+import { createSignal, createResource, onMount, For, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
+import { api } from "../../services/api";
 import PublicLayout from "../../components/public/PublicLayout";
 
-const ROOM_TYPES = [
-    {
-        type: "Simple",
-        description: "Perfecta para viajeros de negocios. Comodidad y funcionalidad en un espacio acogedor.",
-        price: 50,
-        image: "https://placehold.co/600x400/2a2a4e/c9a84c?text=Simple",
-    },
-    {
-        type: "Doble",
-        description: "Ideal para parejas. Amplitud y confort con una cama king size y vistas espectaculares.",
-        price: 75,
-        image: "https://placehold.co/600x400/2a2a4e/c9a84c?text=Doble",
-    },
-    {
-        type: "Suite",
-        description: "La experiencia premium. Sala de estar, minibar y todas las comodidades de lujo.",
-        price: 100,
-        image: "https://placehold.co/600x400/2a2a4e/c9a84c?text=Suite",
-    },
-    {
-        type: "Deluxe",
-        description: "Elegancia sin igual. Espacios amplios, decoración premium y servicio personalizado.",
-        price: 120,
-        image: "https://placehold.co/600x400/2a2a4e/c9a84c?text=Deluxe",
-    },
-];
+const BACKEND_URL = "http://localhost:4000";
+
+const TYPE_DESCRIPTIONS = {
+    Simple: "Perfecta para viajeros de negocios. Comodidad y funcionalidad en un espacio acogedor.",
+    Doble: "Ideal para parejas. Amplitud y confort con una cama king size y vistas espectaculares.",
+    Suite: "La experiencia premium. Sala de estar, minibar y todas las comodidades de lujo.",
+    Deluxe: "Elegancia sin igual. Espacios amplios, decoración premium y servicio personalizado.",
+    Presidencial: "Lo mejor de lo mejor. Lujo absoluto con todas las comodidades exclusivas.",
+};
 
 const FEATURES = [
     {
@@ -54,6 +38,35 @@ const FEATURES = [
 
 function Landing() {
     const navigate = useNavigate();
+
+    // Cargar habitaciones del backend agrupadas por tipo
+    const [roomsData] = createResource(async () => {
+        try {
+            const result = await api.getRooms({ limit: 100 });
+            if (!result?.data) return [];
+
+            // Agrupar por tipo y obtener precio más bajo e imagen de cada tipo
+            const grouped = {};
+            result.data.forEach((room) => {
+                if (!grouped[room.type] || room.basePrice < grouped[room.type].price) {
+                    grouped[room.type] = {
+                        type: room.type,
+                        price: room.basePrice,
+                        image: room.images?.length > 0 ? `${BACKEND_URL}${room.images[0]}` : null,
+                        description: room.description || TYPE_DESCRIPTIONS[room.type] || "",
+                    };
+                }
+                // Si el actual no tiene imagen pero otro del mismo tipo sí, usar esa
+                if (!grouped[room.type].image && room.images?.length > 0) {
+                    grouped[room.type].image = `${BACKEND_URL}${room.images[0]}`;
+                }
+            });
+
+            return Object.values(grouped);
+        } catch (error) {
+            return [];
+        }
+    });
 
     // Search form
     const [checkIn, setCheckIn] = createSignal("");
@@ -95,7 +108,7 @@ function Landing() {
                 {/* Background */}
                 <div class="absolute inset-0">
                     <img
-                        src="https://placehold.co/1920x1080/1a1a2e/c9a84c?text=Hotel+Reservations"
+                        src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&h=1080&fit=crop"
                         alt="Hotel"
                         class="w-full h-full object-cover"
                     />
@@ -233,50 +246,69 @@ function Landing() {
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <For each={ROOM_TYPES}>
-                            {(room) => (
-                                <div
-                                    class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer"
-                                    onClick={() => searchByType(room.type)}
-                                >
-                                    <div class="relative overflow-hidden h-56">
-                                        <img
-                                            src={room.image}
-                                            alt={room.type}
-                                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                        />
-                                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    </div>
-                                    <div class="p-6">
-                                        <h3
-                                            class="text-xl font-semibold text-[#1a1a2e] mb-2"
-                                            style={{ "font-family": "'Cormorant Garamond', serif" }}
-                                        >
-                                            {room.type}
-                                        </h3>
-                                        <p
-                                            class="text-gray-500 text-sm mb-4 leading-relaxed"
-                                            style={{ "font-family": "'Montserrat', sans-serif", "font-weight": "300" }}
-                                        >
-                                            {room.description}
-                                        </p>
-                                        <div class="flex items-center justify-between">
-                                            <p style={{ "font-family": "'Montserrat', sans-serif" }}>
-                                                <span class="text-sm text-gray-400">desde </span>
-                                                <span class="text-lg font-semibold text-[#1a1a2e]">{formatPrice(room.price)}</span>
-                                                <span class="text-sm text-gray-400"> /noche</span>
-                                            </p>
-                                            <span
-                                                class="text-xs font-medium text-[#c9a84c] group-hover:translate-x-1 transition-transform"
-                                                style={{ "font-family": "'Montserrat', sans-serif" }}
+                        <Show
+                            when={roomsData() && roomsData().length > 0}
+                            fallback={
+                                <div class="col-span-4 text-center py-8">
+                                    <div class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-[#c9a84c] border-r-transparent mb-3"></div>
+                                    <p class="text-gray-400 text-sm" style={{ "font-family": "'Montserrat', sans-serif" }}>Cargando habitaciones...</p>
+                                </div>
+                            }
+                        >
+                            <For each={roomsData()}>
+                                {(room) => (
+                                    <div
+                                        class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer"
+                                        onClick={() => searchByType(room.type)}
+                                    >
+                                        <div class="relative overflow-hidden h-56">
+                                            <Show
+                                                when={room.image}
+                                                fallback={
+                                                    <div class="w-full h-full bg-[#1a1a2e] flex items-center justify-center">
+                                                        <span class="text-[#c9a84c] text-2xl font-light" style={{ "font-family": "'Cormorant Garamond', serif" }}>{room.type}</span>
+                                                    </div>
+                                                }
                                             >
-                                                Ver más →
-                                            </span>
+                                                <img
+                                                    src={room.image}
+                                                    alt={room.type}
+                                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                />
+                                            </Show>
+                                            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                        </div>
+                                        <div class="p-6">
+                                            <h3
+                                                class="text-xl font-semibold text-[#1a1a2e] mb-2"
+                                                style={{ "font-family": "'Cormorant Garamond', serif" }}
+                                            >
+                                                {room.type}
+                                            </h3>
+                                            <p
+                                                class="text-gray-500 text-sm mb-4 leading-relaxed"
+                                                style={{ "font-family": "'Montserrat', sans-serif", "font-weight": "300" }}
+                                            >
+                                                {room.description}
+                                            </p>
+                                            <div class="flex items-center justify-between">
+                                                <p style={{ "font-family": "'Montserrat', sans-serif" }}>
+                                                    <span class="text-sm text-gray-400">desde </span>
+                                                    <span class="text-lg font-semibold text-[#1a1a2e]">{formatPrice(room.price)}</span>
+                                                    <span class="text-sm text-gray-400"> /noche</span>
+                                                </p>
+                                                <span
+                                                    class="text-xs font-medium text-[#c9a84c] group-hover:translate-x-1 transition-transform"
+                                                    style={{ "font-family": "'Montserrat', sans-serif" }}
+                                                >
+                                                    Ver más →
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-                        </For>
+                                )}
+                            </For>
+                        </Show>
                     </div>
                 </div>
             </section>
@@ -385,7 +417,7 @@ function Landing() {
 
                         <div class="relative">
                             <img
-                                src="https://placehold.co/600x800/2a2a4e/c9a84c?text=Hotel"
+                                src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=600&h=800&fit=crop"
                                 alt="Hotel Interior"
                                 class="rounded-2xl shadow-2xl w-full h-[500px] object-cover"
                             />

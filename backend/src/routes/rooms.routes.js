@@ -13,7 +13,7 @@ const routes = [
     {
         method: 'GET',
         path: '/',
-        permission: PERMISSIONS.ROOMS_READ,
+        permission: null, // Sin permiso específico, solo autenticación esto para la landig page actualmente
         description: 'Listar habitaciones del hotel',
         handler: controller.getAll,
         middlewares: []
@@ -37,7 +37,7 @@ const routes = [
     {
         method: 'GET',
         path: '/:id',
-        permission: PERMISSIONS.ROOMS_READ,
+        permission: null, // Sin permiso específico, solo autenticación esto para la landig page actualmente
         description: 'Obtener detalle de una habitación',
         handler: controller.getRoom,
         middlewares: []

@@ -49,7 +49,7 @@ function SearchRooms() {
             if (!params) return null;
             const filters = {};
             Object.entries(params).forEach(([key, val]) => {
-                if (val) filters[key] = val;
+                if (val !== "" && val !== null && val !== undefined) filters[key] = val;
             });
             setHasSearched(true);
             return api.searchAvailableRooms(filters);
