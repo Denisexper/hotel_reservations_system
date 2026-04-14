@@ -248,9 +248,21 @@ export class RoomController {
             // Filtrar habitaciones disponibles
             const filter = {
                 isActive: true,
-                status: 'disponible',
                 _id: { $nin: occupiedRoomIds }
             };
+
+            // Si la búsqueda incluye hoy, excluir habitaciones en mantenimiento, ocupadas y limpieza
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const searchStart = new Date(checkIn + "T00:00:00");
+            searchStart.setHours(0, 0, 0, 0);
+
+            if (searchStart.getTime() === today.getTime()) {
+                filter.status = { $nin: ['mantenimiento', 'limpieza', 'ocupada'] };
+            } else {
+                filter.status = { $nin: ['mantenimiento'] };
+            }
 
             if (guests) filter.capacity = { $gte: Number(guests) };
             if (type) filter.type = type;

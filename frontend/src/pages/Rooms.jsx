@@ -314,6 +314,23 @@ function Rooms() {
     );
   };
 
+  const handleQuickStatus = (room) => {
+    showToast.confirm(
+      `¿Marcar la habitación #${room.roomNumber} como disponible?`,
+      async () => {
+        try {
+          const formData = new FormData();
+          formData.append("status", "disponible");
+          await api.requestFormData(`/rooms/${room._id}`, formData, "PUT");
+          showToast.success(`Habitación #${room.roomNumber} marcada como disponible`);
+          refetch();
+        } catch (error) {
+          showToast.error(error.message);
+        }
+      },
+    );
+  };
+
   // Cambiar entre vista activas/inactivas
   const toggleView = (inactive) => {
     setViewingInactive(inactive);
@@ -397,21 +414,19 @@ function Rooms() {
             <div class="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-800/50 rounded-lg p-1 w-fit">
               <button
                 onClick={() => toggleView(false)}
-                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  !viewingInactive()
-                    ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
+                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!viewingInactive()
+                  ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
               >
                 Activas
               </button>
               <button
                 onClick={() => toggleView(true)}
-                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  viewingInactive()
-                    ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
+                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewingInactive()
+                  ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
               >
                 Desactivadas
               </button>
@@ -649,6 +664,18 @@ function Rooms() {
                                     </button>
                                   </Show>
 
+                                  {/* Cambio rápido de estado */}
+                                  <Show when={auth.hasPermission("rooms.update") && ["limpieza", "ocupada"].includes(room.status)}>
+                                    <button
+                                      onClick={() => handleQuickStatus(room)}
+                                      class="text-xs px-3 py-1.5 rounded-md border border-green-200 
+                                            dark:border-green-500/30 text-green-600 dark:text-green-400
+                                            hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors"
+                                    >
+                                      ✓ Disponible
+                                    </button>
+                                  </Show>
+
                                   {/* Editar */}
                                   <Show when={auth.hasPermission("rooms.update")}>
                                     <button
@@ -855,11 +882,10 @@ function Rooms() {
                         <button
                           type="button"
                           onClick={() => toggleAmenity(amenity)}
-                          class={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                            formAmenities().includes(amenity)
-                              ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40"
-                              : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
-                          }`}
+                          class={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${formAmenities().includes(amenity)
+                            ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40"
+                            : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
+                            }`}
                         >
                           {formAmenities().includes(amenity) ? "✓ " : ""}
                           {amenity}
@@ -1074,11 +1100,10 @@ function Rooms() {
                     {(img, index) => (
                       <button
                         onClick={() => setGalleryIndex(index())}
-                        class={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                          galleryIndex() === index()
-                            ? "border-white scale-105"
-                            : "border-transparent opacity-60 hover:opacity-100"
-                        }`}
+                        class={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${galleryIndex() === index()
+                          ? "border-white scale-105"
+                          : "border-transparent opacity-60 hover:opacity-100"
+                          }`}
                       >
                         <img
                           src={`${BACKEND_URL}${img}`}

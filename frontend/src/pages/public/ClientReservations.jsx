@@ -347,7 +347,7 @@ function ClientReservations() {
                                                                         Pagar
                                                                     </button>
                                                                 </Show>
-                                                                <Show when={!["cancelada", "check-out"].includes(res.status)}>
+                                                                <Show when={!["cancelada", "check-out", 'check-in'].includes(res.status)}>
                                                                     <button
                                                                         onClick={() => openCancel(res)}
                                                                         class="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"

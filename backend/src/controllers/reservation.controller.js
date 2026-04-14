@@ -320,7 +320,7 @@ export class ReservationController {
                 return res.status(404).json({ msj: "Reserva no encontrada" });
             }
 
-            if (['cancelada', 'check-out'].includes(reservation.status)) {
+            if (['cancelada', 'check-out', 'check-in'].includes(reservation.status)) {
                 return res.status(400).json({ msj: "No se puede cancelar esta reserva" });
             }
 
