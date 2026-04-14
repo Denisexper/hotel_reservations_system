@@ -18,7 +18,7 @@ const routes = [
     {
         method: 'GET',
         path: '/stats',
-        permission: PERMISSIONS.DASHBOARD_STATS,
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
         description: 'Estadísticas generales del hotel',
         handler: controller.getGeneralStats,
         middlewares: []
@@ -26,7 +26,7 @@ const routes = [
     {
         method: 'GET',
         path: '/revenue',
-        permission: PERMISSIONS.DASHBOARD_STATS,
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
         description: 'Ingresos por período',
         handler: controller.getRevenueByPeriod,
         middlewares: []
@@ -34,7 +34,7 @@ const routes = [
     {
         method: 'GET',
         path: '/reservations-by-status',
-        permission: PERMISSIONS.DASHBOARD_STATS,
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
         description: 'Reservas agrupadas por estado',
         handler: controller.getReservationsByStatus,
         middlewares: []
@@ -42,7 +42,7 @@ const routes = [
     {
         method: 'GET',
         path: '/top-rooms',
-        permission: PERMISSIONS.DASHBOARD_STATS,
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
         description: 'Habitaciones más reservadas',
         handler: controller.getTopRooms,
         middlewares: []
@@ -50,7 +50,7 @@ const routes = [
     {
         method: 'GET',
         path: '/today',
-        permission: PERMISSIONS.DASHBOARD_STATS,
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
         description: 'Check-ins y check-outs del día',
         handler: controller.getTodayActivity,
         middlewares: []
@@ -58,7 +58,7 @@ const routes = [
     {
         method: 'GET',
         path: '/occupancy',
-        permission: PERMISSIONS.DASHBOARD_STATS,
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
         description: 'Ocupación por período',
         handler: controller.getOccupancyByPeriod,
         middlewares: []
@@ -66,7 +66,7 @@ const routes = [
     {
         method: 'GET',
         path: '/revenue-by-method',
-        permission: PERMISSIONS.DASHBOARD_STATS,
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
         description: 'Ingresos por método de pago',
         handler: controller.getRevenueByPaymentMethod,
         middlewares: []

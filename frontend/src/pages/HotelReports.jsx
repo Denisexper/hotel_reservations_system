@@ -36,12 +36,12 @@ function HotelReports() {
   const auth = useAuth();
   const navigate = useNavigate();
 
-  if (!auth.hasPermission("dashboard.stats") && !auth.hasPermission("dashboard.view")) {
+  if (!auth.hasPermission("hotel_reports.read")) {
     navigate("/dashboard");
     return null;
   }
 
-  const hasFullStats = () => auth.hasPermission("dashboard.stats");
+  const hasFullStats = () => auth.hasPermission("hotel_reports.read");
 
   const [stats, setStats] = createSignal(null);
   const [revenue, setRevenue] = createSignal([]);

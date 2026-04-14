@@ -26,12 +26,17 @@ export const seedPermissions = async (routeModules) => {
                     description: perm.description,
                     isActive: true
                 },
-                { 
+                {
                     upsert: true,  // Crear si no existe, actualizar si existe
                     returnDocument: 'after'
                 }
             );
         }
+
+        // Eliminar permisos que ya no existen en las rutas
+        const discoveredCodes = discoveredPermissions.map(p => p.code);
+        await Permission.deleteMany({ code: { $nin: discoveredCodes } });
+        console.log('🧹 Permisos obsoletos eliminados');
 
         console.log('✅ Permisos sincronizados en base de datos');
 
