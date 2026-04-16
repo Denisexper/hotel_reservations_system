@@ -86,6 +86,22 @@ const routes = [
         description: 'Exportar estadísticas a PDF',
         handler: controller.exportPDF,
         middlewares: []
+    },
+    {
+        method: 'GET',
+        path: '/top-clients',
+        permission: PERMISSIONS.HOTEL_REPORTS_READ,
+        description: 'Top clientes con más reservas',
+        handler: controller.getTopClients,
+        middlewares: []
+    },
+    {
+        method: 'GET',
+        path: '/my-loyalty',
+        permission: PERMISSIONS.RESERVATIONS_READ, // Cualquier cliente autenticado puede ver su nivel de fidelidad
+        description: 'Información de fidelidad del cliente',
+        handler: controller.getMyLoyalty,
+        middlewares: []
     }
 ];
 

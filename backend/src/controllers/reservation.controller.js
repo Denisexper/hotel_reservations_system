@@ -168,7 +168,12 @@ export class ReservationController {
                 start.toDate()
             );
 
-            const priceSnapshot = adjustedPrice;
+
+            // Aplicar descuento por fidelidad
+            const { applyLoyaltyDiscount } = await import('../services/loyalty.service.js');
+            const loyaltyResult = await applyLoyaltyDiscount(userId, adjustedPrice);
+            const priceSnapshot = loyaltyResult.finalPrice
+
             const totalAmount = nights * priceSnapshot;
 
             const reservationCode = await Reservation.generateReservationCode();

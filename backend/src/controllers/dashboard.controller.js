@@ -481,4 +481,75 @@ export class DashboardController {
             res.status(500).json({ msj: "Error generando reporte PDF", error: error.message });
         }
     }
+
+    // Top clientes con más reservas/gastos
+    async getTopClients(req, res) {
+        try {
+            const { limit = 10 } = req.query;
+
+            const topClients = await Reservation.aggregate([
+                { $match: { status: { $ne: 'cancelada' } } },
+                {
+                    $group: {
+                        _id: '$client',
+                        totalReservations: { $sum: 1 },
+                        totalSpent: { $sum: '$totalAmount' }
+                    }
+                },
+                { $sort: { totalReservations: -1 } },
+                { $limit: parseInt(limit) },
+                {
+                    $lookup: {
+                        from: 'usermodels',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'clientInfo'
+                    }
+                },
+                { $unwind: '$clientInfo' },
+                {
+                    $project: {
+                        _id: 0,
+                        clientId: '$_id',
+                        name: '$clientInfo.name',
+                        email: '$clientInfo.email',
+                        totalReservations: 1,
+                        totalSpent: 1
+                    }
+                }
+            ]);
+
+            // Calcular nivel de fidelidad de cada cliente
+            const { LOYALTY_LEVELS } = await import('../services/loyalty.service.js');
+            const clientsWithLoyalty = topClients.map(client => {
+                let level;
+                if (client.totalReservations >= LOYALTY_LEVELS.PLATINO.minReservations) level = LOYALTY_LEVELS.PLATINO;
+                else if (client.totalReservations >= LOYALTY_LEVELS.ORO.minReservations) level = LOYALTY_LEVELS.ORO;
+                else if (client.totalReservations >= LOYALTY_LEVELS.PLATA.minReservations) level = LOYALTY_LEVELS.PLATA;
+                else level = LOYALTY_LEVELS.BRONCE;
+
+                return {
+                    ...client,
+                    loyaltyLevel: level.name,
+                    loyaltyColor: level.color,
+                    discount: level.discount
+                };
+            });
+
+            res.status(200).json({ msj: "Top clientes obtenidos", data: clientsWithLoyalty });
+        } catch (error) {
+            res.status(500).json({ msj: "Error al obtener top clientes", error: error.message });
+        }
+    }
+
+    // Información de fidelidad del cliente logueado
+    async getMyLoyalty(req, res) {
+        try {
+            const { calculateLoyaltyLevel } = await import('../services/loyalty.service.js');
+            const loyalty = await calculateLoyaltyLevel(req.user.id);
+            res.status(200).json({ msj: "Información de fidelidad obtenida", data: loyalty });
+        } catch (error) {
+            res.status(500).json({ msj: "Error al obtener fidelidad", error: error.message });
+        }
+    }
 }
