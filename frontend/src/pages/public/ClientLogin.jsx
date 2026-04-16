@@ -116,7 +116,7 @@ function ClientLogin() {
                             <p class="text-gray-500 text-sm" style={{ "font-family": "'Montserrat', sans-serif" }}>
                                 ¿No tienes cuenta?{" "}
                                 <A
-                                    href={`/client-register${searchParams.returnUrl ? `?returnUrl=${searchParams.returnUrl}` : ""}`}
+                                    href={`/client-register${searchParams.returnUrl ? `?returnUrl=${encodeURIComponent(searchParams.returnUrl)}` : ""}`}
                                     class="text-[#c9a84c] hover:underline font-medium"
                                 >
                                     Regístrate aquí

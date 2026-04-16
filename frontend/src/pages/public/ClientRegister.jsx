@@ -49,7 +49,7 @@ function ClientRegister() {
                 }
             } else {
                 // Si el auto-login falla, enviar al login del cliente
-                navigate(`/client-login${searchParams.returnUrl ? `?returnUrl=${searchParams.returnUrl}` : ""}`);
+                navigate(`/client-login${searchParams.returnUrl ? `?returnUrl=${encodeURIComponent(searchParams.returnUrl)}` : ""}`);
             }
         } else {
             setError(result.error);
@@ -165,7 +165,7 @@ function ClientRegister() {
                             <p class="text-gray-500 text-sm" style={{ "font-family": "'Montserrat', sans-serif" }}>
                                 ¿Ya tienes cuenta?{" "}
                                 <A
-                                    href={`/client-login${searchParams.returnUrl ? `?returnUrl=${searchParams.returnUrl}` : ""}`}
+                                    href={`/client-login${searchParams.returnUrl ? `?returnUrl=${encodeURIComponent(searchParams.returnUrl)}` : ""}`}
                                     class="text-[#c9a84c] hover:underline font-medium"
                                 >
                                     Inicia sesión
