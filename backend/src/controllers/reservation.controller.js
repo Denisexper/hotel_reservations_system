@@ -208,7 +208,17 @@ export class ReservationController {
                 console.error('Error enviando email de confirmación:', emailError.message);
             }
 
-            res.status(201).json({ msj: "Reserva creada exitosamente", data: newReservation });
+            res.status(201).json({
+                msj: "Reserva creada exitosamente",
+                data: newReservation,
+                loyalty: loyaltyResult.discount > 0 ? {
+                    level: loyaltyResult.loyaltyLevel,
+                    discount: loyaltyResult.discount,
+                    discountAmount: loyaltyResult.discountAmount * nights,
+                    originalPrice: adjustedPrice,
+                    finalPrice: loyaltyResult.finalPrice
+                } : null
+            });
         } catch (error) {
             res.status(500).json({ msj: "Error al crear reserva", error: error.message });
         }

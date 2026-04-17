@@ -32,11 +32,14 @@ function RoomDetail() {
     const [checkOut, setCheckOut] = createSignal(searchParams.checkOut || "");
     const [guests, setGuests] = createSignal(parseInt(searchParams.guests) || 2);
     const [checking, setChecking] = createSignal(false);
-    const [availability, setAvailability] = createSignal(null); // null = not checked, true/false
+    const [availability, setAvailability] = createSignal(null);
     const [booking, setBooking] = createSignal(false);
 
     // Seasonal price check
     const [seasonalInfo, setSeasonalInfo] = createSignal(null);
+
+    // Loyalty info
+    const [loyaltyInfo, setLoyaltyInfo] = createSignal(null);
 
     const todayStr = () => new Date().toISOString().split("T")[0];
 
@@ -67,7 +70,7 @@ function RoomDetail() {
         return [PLACEHOLDER_IMAGES[r.type] || PLACEHOLDER_IMAGES.Simple];
     };
 
-    // Check availability
+    // Check availability + loyalty
     const checkAvailability = async () => {
         if (!checkIn() || !checkOut()) {
             showToast.error("Selecciona las fechas");
@@ -75,13 +78,25 @@ function RoomDetail() {
         }
         setChecking(true);
         setAvailability(null);
+        setLoyaltyInfo(null);
         try {
-            const [availRes, priceRes] = await Promise.all([
+            const promises = [
                 api.checkAvailability(params.id, checkIn(), checkOut()),
                 api.checkSeasonalPrice(params.id, checkIn()),
-            ]);
-            setAvailability(availRes.available);
-            setSeasonalInfo(priceRes.data);
+            ];
+
+            // Si está logueado como cliente, consultar fidelidad
+            if (auth.isAuthenticated() && auth.user()?.role === "cliente") {
+                promises.push(api.getMyLoyalty().catch(() => null));
+            }
+
+            const results = await Promise.all(promises);
+            setAvailability(results[0].available);
+            setSeasonalInfo(results[1].data);
+
+            if (results[2]?.data) {
+                setLoyaltyInfo(results[2].data);
+            }
         } catch (error) {
             showToast.error(error.message);
         }
@@ -98,13 +113,17 @@ function RoomDetail() {
 
         setBooking(true);
         try {
-            await api.createReservation({
+            const result = await api.createReservation({
                 room: params.id,
                 checkIn: checkIn(),
                 checkOut: checkOut(),
                 numberOfGuests: guests(),
             });
-            showToast.success("Reserva creada exitosamente");
+            if (result.loyalty) {
+                showToast.success(`¡Reserva creada! Descuento fidelidad ${result.loyalty.level}: -${formatPrice(result.loyalty.discountAmount)} (${result.loyalty.discount}%)`);
+            } else {
+                showToast.success("Reserva creada exitosamente");
+            }
             navigate("/my-reservations");
         } catch (error) {
             showToast.error(error.message);
@@ -125,6 +144,22 @@ function RoomDetail() {
     const pricePerNight = () => {
         if (seasonalInfo()) return seasonalInfo().adjustedPrice;
         return room()?.data?.basePrice || 0;
+    };
+
+    // Precio con descuento de fidelidad
+    const priceWithLoyalty = () => {
+        const base = pricePerNight();
+        if (loyaltyInfo() && loyaltyInfo().discount > 0) {
+            return base - (base * loyaltyInfo().discount / 100);
+        }
+        return base;
+    };
+
+    const loyaltyDiscountPerNight = () => {
+        if (loyaltyInfo() && loyaltyInfo().discount > 0) {
+            return pricePerNight() * loyaltyInfo().discount / 100;
+        }
+        return 0;
     };
 
     return (
@@ -184,8 +219,7 @@ function RoomDetail() {
                                                             {(_, i) => (
                                                                 <button
                                                                     onClick={() => setCurrentImage(i())}
-                                                                    class={`w-2.5 h-2.5 rounded-full transition-all ${currentImage() === i() ? "bg-white scale-110" : "bg-white/50"
-                                                                        }`}
+                                                                    class={`w-2.5 h-2.5 rounded-full transition-all ${currentImage() === i() ? "bg-white scale-110" : "bg-white/50"}`}
                                                                 />
                                                             )}
                                                         </For>
@@ -205,8 +239,7 @@ function RoomDetail() {
                                                         {(img, i) => (
                                                             <button
                                                                 onClick={() => setCurrentImage(i())}
-                                                                class={`w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${currentImage() === i() ? "border-[#c9a84c]" : "border-transparent opacity-60 hover:opacity-100"
-                                                                    }`}
+                                                                class={`w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${currentImage() === i() ? "border-[#c9a84c]" : "border-transparent opacity-60 hover:opacity-100"}`}
                                                             >
                                                                 <img src={img} alt="" class="w-full h-full object-cover" />
                                                             </button>
@@ -315,7 +348,7 @@ function RoomDetail() {
                                                             class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#c9a84c]"
                                                             min={todayStr()}
                                                             value={checkIn()}
-                                                            onInput={(e) => { setCheckIn(e.target.value); setAvailability(null); setSeasonalInfo(null); }}
+                                                            onInput={(e) => { setCheckIn(e.target.value); setAvailability(null); setSeasonalInfo(null); setLoyaltyInfo(null); }}
                                                         />
                                                     </div>
                                                     <div>
@@ -325,7 +358,7 @@ function RoomDetail() {
                                                             class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#c9a84c]"
                                                             min={checkIn() || todayStr()}
                                                             value={checkOut()}
-                                                            onInput={(e) => { setCheckOut(e.target.value); setAvailability(null); }}
+                                                            onInput={(e) => { setCheckOut(e.target.value); setAvailability(null); setLoyaltyInfo(null); }}
                                                         />
                                                     </div>
                                                     <div>
@@ -365,16 +398,41 @@ function RoomDetail() {
                                                             <div class="p-4 bg-green-50 rounded-lg border border-green-100">
                                                                 <p class="text-sm text-green-700 font-medium mb-3">Habitación disponible</p>
                                                                 <div class="space-y-2 text-sm">
+                                                                    {/* Precio por noche × noches */}
                                                                     <div class="flex justify-between text-gray-600">
                                                                         <span>{formatPrice(pricePerNight())} × {calculateNights()} noche(s)</span>
                                                                         <span class="font-medium text-gray-900">{formatPrice(pricePerNight() * calculateNights())}</span>
                                                                     </div>
+
+                                                                    {/* Descuento fidelidad */}
+                                                                    <Show when={loyaltyInfo() && loyaltyInfo().discount > 0}>
+                                                                        <div class="flex justify-between items-center text-green-700">
+                                                                            <span class="flex items-center gap-1.5">
+                                                                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style={{ filter: "drop-shadow(0 0 2px #c9a84c)" }}>
+                                                                                    <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+                                                                                </svg>
+                                                                                <span>Dto. fidelidad {loyaltyInfo().level} ({loyaltyInfo().discount}%)</span>
+                                                                            </span>
+                                                                            <span class="font-medium">-{formatPrice(loyaltyDiscountPerNight() * calculateNights())}</span>
+                                                                        </div>
+                                                                    </Show>
+
+                                                                    {/* Total */}
                                                                     <div class="border-t border-green-200 pt-2 flex justify-between">
                                                                         <span class="font-semibold text-gray-900">Total</span>
                                                                         <span class="font-bold text-lg text-[#1a1a2e]" style={{ "font-family": "'Cormorant Garamond', serif" }}>
-                                                                            {formatPrice(pricePerNight() * calculateNights())}
+                                                                            {formatPrice(priceWithLoyalty() * calculateNights())}
                                                                         </span>
                                                                     </div>
+
+                                                                    {/* Badge de ahorro */}
+                                                                    <Show when={loyaltyInfo() && loyaltyInfo().discount > 0}>
+                                                                        <div class="mt-1 p-2 bg-[#c9a84c]/10 rounded-lg border border-[#c9a84c]/20 text-center">
+                                                                            <p class="text-xs font-medium" style={{ color: "#c9a84c" }}>
+                                                                                ¡Ahorras {formatPrice(loyaltyDiscountPerNight() * calculateNights())} con tu nivel {loyaltyInfo().level}!
+                                                                            </p>
+                                                                        </div>
+                                                                    </Show>
                                                                 </div>
                                                             </div>
 
