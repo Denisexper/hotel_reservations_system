@@ -5,6 +5,7 @@ import { useNavigate } from "@solidjs/router";
 import { showToast } from "../../utils/toast";
 import PublicLayout from "../../components/public/PublicLayout";
 import Pagination from "../../components/Pagination";
+import LoyaltyCard from "../../components/public/LoyaltyCard";
 
 const BACKEND_URL = "http://localhost:4000";
 
@@ -213,6 +214,7 @@ function ClientReservations() {
                             Nueva Reserva
                         </button>
                     </div>
+                    <LoyaltyCard />
 
                     {/* Filtro por estado */}
                     <div class="flex gap-2 mb-8 overflow-x-auto pb-2" style={{ "font-family": "'Montserrat', sans-serif" }}>

@@ -32,6 +32,21 @@ const METHOD_COLORS = {
   transferencia: "#8b5cf6",
 };
 
+const CrownIcon = (props) => (
+  <svg
+    class={props.class || "w-5 h-5"}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={props.color || "currentColor"}
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    style={props.glow ? { filter: `drop-shadow(0 0 4px ${props.color})` } : {}}
+  >
+    <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+  </svg>
+);
+
 function HotelReports() {
   const auth = useAuth();
   const navigate = useNavigate();
@@ -47,6 +62,7 @@ function HotelReports() {
   const [revenue, setRevenue] = createSignal([]);
   const [reservationsByStatus, setReservationsByStatus] = createSignal([]);
   const [topRooms, setTopRooms] = createSignal([]);
+  const [topClients, setTopClients] = createSignal([]);
   const [todayActivity, setTodayActivity] = createSignal(null);
   const [occupancy, setOccupancy] = createSignal([]);
   const [revenueByMethod, setRevenueByMethod] = createSignal([]);
@@ -56,13 +72,14 @@ function HotelReports() {
   onMount(async () => {
     try {
       if (hasFullStats()) {
-        const [statsRes, revenueRes, statusRes, topRes, todayRes, occupancyRes, methodRes] = await Promise.all([
+        const [statsRes, revenueRes, statusRes, topRes, todayRes, occupancyRes, methodRes, clientsRes] = await Promise.all([
           api.getDashboardStats(), api.getDashboardRevenue(), api.getDashboardReservationsByStatus(),
           api.getDashboardTopRooms(), api.getDashboardToday(), api.getDashboardOccupancy(), api.getDashboardRevenueByMethod(),
+          api.getTopClients(10).catch(() => ({ data: [] })),
         ]);
         setStats(statsRes.data); setRevenue(revenueRes.data || []); setReservationsByStatus(statusRes.data || []);
         setTopRooms(topRes.data || []); setTodayActivity(todayRes.data); setOccupancy(occupancyRes.data || []);
-        setRevenueByMethod(methodRes.data || []);
+        setRevenueByMethod(methodRes.data || []); setTopClients(clientsRes.data || []);
       } else {
         const [statsRes, todayRes] = await Promise.all([
           api.getDashboardStats().catch(() => null), api.getDashboardToday().catch(() => null),
@@ -101,7 +118,6 @@ function HotelReports() {
     return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
   };
 
-  // Chart data builders
   const revenueChartData = () => ({
     labels: revenue().map((r) => r.month),
     datasets: [{
@@ -163,7 +179,7 @@ function HotelReports() {
               <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Reportes del Hotel</h1>
               <p class="text-gray-500 dark:text-gray-400 mt-1">{hasFullStats() ? "Estadísticas y reportes del hotel" : "Actividad del día"}</p>
             </div>
-            <Show when={hasFullStats() && auth.hasPermission("hotel_reports.read")}>
+            <Show when={hasFullStats()}>
               <div class="flex gap-2">
                 <button onClick={() => exportFile("excel")} disabled={exportLoading() === "excel"} class="btn-secondary disabled:opacity-50">
                   {exportLoading() === "excel" ? "Exportando..." : "Excel"}
@@ -181,7 +197,6 @@ function HotelReports() {
               <p>Cargando reportes...</p>
             </div>
           }>
-            {/* TARJETAS */}
             <Show when={stats()}>
               <div class={`grid gap-4 mb-8 ${hasFullStats() ? "grid-cols-1 md:grid-cols-4" : "grid-cols-1 md:grid-cols-2"}`}>
                 <div class="card">
@@ -234,7 +249,6 @@ function HotelReports() {
               </div>
             </Show>
 
-            {/* GRÁFICOS */}
             <Show when={hasFullStats()}>
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
                 <div class="card lg:col-span-2">
@@ -289,6 +303,7 @@ function HotelReports() {
                 </div>
               </div>
 
+              {/* Top habitaciones */}
               <div class="card mb-4">
                 <p class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Top 5 Habitaciones Más Reservadas</p>
                 <Show when={topRooms().length > 0} fallback={<p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">Sin datos</p>}>
@@ -312,6 +327,67 @@ function HotelReports() {
                               <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{room.type}</td>
                               <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{room.totalReservations}</td>
                               <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{formatPrice(room.totalRevenue)}</td>
+                            </tr>
+                          )}
+                        </For>
+                      </tbody>
+                    </table>
+                  </div>
+                </Show>
+              </div>
+
+              {/* TOP CLIENTES FRECUENTES */}
+              <div class="card mb-4">
+                <div class="flex items-center gap-2 mb-4">
+                  <CrownIcon class="w-5 h-5" color="#ffd700" glow={true} />
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">Top 10 Clientes Frecuentes</p>
+                </div>
+                <Show when={topClients().length > 0} fallback={<p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">Sin datos de clientes</p>}>
+                  <div class="overflow-x-auto">
+                    <table class="w-full">
+                      <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-800">
+                          <th class="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
+                          <th class="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Cliente</th>
+                          <th class="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Reservas</th>
+                          <th class="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Total Gastado</th>
+                          <th class="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Nivel</th>
+                          <th class="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Descuento</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <For each={topClients()}>
+                          {(client, index) => (
+                            <tr class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                              <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{index() + 1}</td>
+                              <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                  <CrownIcon class="w-4 h-4 flex-shrink-0" color={client.loyaltyColor} glow={true} />
+                                  <div>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{client.name}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{client.email}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{client.totalReservations}</td>
+                              <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{formatPrice(client.totalSpent)}</td>
+                              <td class="px-4 py-3">
+                                <span
+                                  class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium"
+                                  style={{
+                                    "background-color": `${client.loyaltyColor}15`,
+                                    color: client.loyaltyColor,
+                                    border: `1px solid ${client.loyaltyColor}30`,
+                                  }}
+                                >
+                                  {client.loyaltyLevel}
+                                </span>
+                              </td>
+                              <td class="px-4 py-3 text-sm">
+                                <Show when={client.discount > 0} fallback={<span class="text-gray-400">Sin descuento</span>}>
+                                  <span class="font-medium text-green-600 dark:text-green-400">{client.discount}%</span>
+                                </Show>
+                              </td>
                             </tr>
                           )}
                         </For>

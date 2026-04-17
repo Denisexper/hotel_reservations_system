@@ -543,6 +543,18 @@ class ApiService {
       method: "DELETE",
     });
   }
+
+  // ============================================
+  // LOYALTY (Fidelidad)
+  // ============================================
+
+  async getTopClients(limit = 10) {
+    return this.request(`/dashboard/top-clients?limit=${limit}`);
+  }
+
+  async getMyLoyalty() {
+    return this.request("/dashboard/my-loyalty");
+  }
 }
 
 export const api = new ApiService();

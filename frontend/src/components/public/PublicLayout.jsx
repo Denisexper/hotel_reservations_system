@@ -2,6 +2,7 @@ import { A, useNavigate } from "@solidjs/router";
 import { useAuth } from "../../context/AuthContext";
 import { createSignal, onMount, onCleanup, Show } from "solid-js";
 import hotelLogo from "../../assets/hotel_icon.png";
+import LoyaltyBadge from "./LoyaltyBadge";
 
 const BACKEND_URL = "http://localhost:4000";
 
@@ -141,6 +142,7 @@ function PublicLayout(props) {
                                             <span class="text-white text-xs font-semibold">
                                                 {auth.user()?.name?.charAt(0).toUpperCase()}
                                             </span>
+                                            <LoyaltyBadge />
                                         </div>
                                         <span>{auth.user()?.name}</span>
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

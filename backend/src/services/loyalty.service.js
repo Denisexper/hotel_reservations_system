@@ -13,7 +13,7 @@ export const calculateLoyaltyLevel = async (clientId) => {
     // Contar reservas completadas (check-out) o confirmadas/pagadas
     const reservationCount = await Reservation.countDocuments({
         client: clientId,
-        status: { $in: ['confirmada', 'check-in', 'check-out'] },
+        status: { $in: ['check-out'] },
         paymentStatus: 'pagado'
     });
 
