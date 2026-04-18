@@ -31,6 +31,10 @@ export const PERMISSIONS = {
     MAINTENANCE_UPDATE: 'maintenance.update',
     MAINTENANCE_DELETE: 'maintenance.delete',
     RESERVATIONS_CREATE_OTHERS: 'reservations.create_others',
+    DAYPASS_READ: 'daypass.read',
+    DAYPASS_CREATE: 'daypass.create',
+    DAYPASS_UPDATE: 'daypass.update',
+    DAYPASS_DELETE: 'daypass.delete',
 };
 
 export const seedRoles = async () => {

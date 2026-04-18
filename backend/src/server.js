@@ -17,6 +17,7 @@ import paymentsRoutes, { paymentRoutes as paymentRoutesMetadata } from "./routes
 import seasonalsPrice, { seasonalPriceRoutes as seasonalPriceRoutesMetadata } from "./routes/seasonalPrice.routes.js";
 import maintenancesRoutes, { maintenanceRoutes as maintenanceRoutesMetadata } from "./routes/maintenance.routes.js";
 import dashboardsRoutes, { dashboardRoutes as dashboardRoutesMetadata } from "./routes/dashboard.routes.js";
+import daysPassRoutes, { dayPassRoutes as dayPassRoutesMetadata } from "./routes/dayPass.routes.js";
 
 // import de seeds
 import { seedRoles } from "./db/seedRoles.js";
@@ -74,6 +75,7 @@ mongoConnect().then(async () => {
     seasonalPriceRoutesMetadata,
     maintenanceRoutesMetadata,
     dashboardRoutesMetadata,
+    dayPassRoutesMetadata,
   ]);
 
   // Crear roles del sistema (solo si no existen)
@@ -95,6 +97,6 @@ server.use("/api/payments", paymentsRoutes);
 server.use("/api/seasonal-prices", seasonalsPrice);
 server.use("/api/dashboard", dashboardsRoutes);
 server.use("/api/maintenance", maintenancesRoutes);
-
+server.use("/api/daypass", daysPassRoutes);
 // Middleware de manejo de errores (al final de todas las rutas)
 server.use(errorHandler);

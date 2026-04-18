@@ -5,6 +5,7 @@ import { Reservation } from "../models/reservation.model.js";
 import { Payment } from "../models/payment.model.js";
 import { SeasonalPrice } from "../models/seasonalPrice.model.js";
 import { MaintenanceLog } from "../models/maintenanceLog.model.js";
+import { DayPass } from "../models/dayPass.model.js";
 
 // Mapa de modelos
 const models = {
@@ -14,6 +15,7 @@ const models = {
     payments: Payment,
     seasonals: SeasonalPrice,
     maintenance: MaintenanceLog,
+    daypass: DayPass,
 };
 
 // Configuración de qué campos mostrar por recurso
@@ -62,6 +64,11 @@ const resourceConfig = {
         ],
         getDisplayName: (doc) => `Ticket - Hab. ${doc.room?.roomNumber || 'N/A'}`
     },
+    daypass: {
+        displayFields: ['code', 'visitorName', 'numberOfGuests', 'totalAmount', 'paymentStatus', 'status'],
+        populateFields: [],
+        getDisplayName: (doc) => `${doc.code} - ${doc.visitorName}`
+    }
 };
 
 export const logAction = (action, resource) => {

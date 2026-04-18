@@ -296,4 +296,55 @@ export const sendCheckInReminder = async ({ to, clientName, reservation }) => {
     });
 };
 
+// Email de confirmación de day pass
+export const sendDayPassConfirmation = async ({ to, visitorName, dayPass }) => {
+    const serviceLabels = {
+        piscina: 'Piscina', gimnasio: 'Gimnasio', spa: 'Spa',
+        restaurante: 'Restaurante', bar: 'Bar', playa: 'Playa', todas: 'Todas las instalaciones'
+    };
+
+    const servicesText = dayPass.services
+        .map(s => serviceLabels[s] || s)
+        .join(', ');
+
+    const content = `
+        <h2>🏖️ Day Pass Confirmado</h2>
+        <p>Hola <strong>${visitorName}</strong>,</p>
+        <p>Tu day pass ha sido registrado exitosamente.</p>
+        
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Código:</span>
+                <span class="info-value">${dayPass.code}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Fecha:</span>
+                <span class="info-value">${new Date(dayPass.date).toLocaleDateString('es-ES')}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Personas:</span>
+                <span class="info-value">${dayPass.numberOfGuests}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Servicios:</span>
+                <span class="info-value">${servicesText}</span>
+            </div>
+        </div>
+        
+        <div class="total">
+            <p style="margin:0; font-size: 14px; opacity: 0.8;">Total</p>
+            <span>$${dayPass.totalAmount.toFixed(2)}</span>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">Presenta este correo en recepción al llegar. ¡Te esperamos!</p>
+    `;
+
+    await transporter.sendMail({
+        from: `"Hotel Reservations" <${email_user}>`,
+        to,
+        subject: `🏖️ Day Pass Confirmado - ${dayPass.code}`,
+        html: baseTemplate(content)
+    });
+};
+
 export default transporter;

@@ -124,7 +124,7 @@ export class RoomController {
             }
 
             // Si intenta poner disponible, verificar que no tenga tickets abiertos
-            if (updateData.status === 'disponible') {
+            if (updateData.status === 'disponible', 'ocupada') {
                 const { MaintenanceLog } = await import('../models/maintenanceLog.model.js');
                 const openTickets = await MaintenanceLog.countDocuments({
                     room: id,
