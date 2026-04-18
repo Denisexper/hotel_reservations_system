@@ -15,6 +15,7 @@ const Payments = lazy(() => import("./pages/Payments"));
 const HotelReports = lazy(() => import("./pages/HotelReports"));
 const SeasonalPrices = lazy(() => import("./pages/SeasonalPrices"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
+const DayPass = lazy(() => import("./pages/DayPass"));
 
 //rutas publicas: LandigPage
 const Landing = lazy(() => import("./pages/public/Landing"));
@@ -42,6 +43,7 @@ function App() {
           <Route path="/hotel-reports" component={HotelReports} />
           <Route path="/seasonal-prices" component={SeasonalPrices} />
           <Route path="/maintenance" component={Maintenance} />
+          <Route path="/day-pass" component={DayPass} />
           {/* Rutas públicas */}
           <Route path="/" component={Landing} />
           <Route path="/search" component={SearchRooms} />

@@ -142,6 +142,7 @@ function PermissionSelector(props) {
       hotel_reports: "📈",
       seasonal_prices: "🏷️",
       maintenance: "🔧",
+      daypass: "🎫",
     };
     return emojis[resource] || "📁";
   };

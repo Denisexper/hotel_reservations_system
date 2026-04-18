@@ -555,6 +555,57 @@ class ApiService {
   async getMyLoyalty() {
     return this.request("/dashboard/my-loyalty");
   }
+
+  // ============================================
+  // DAY PASS
+  // ============================================
+
+  async getDayPasses(filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    return this.request(`/daypass${params ? `?${params}` : ""}`);
+  }
+
+  async getDayPassToday() {
+    return this.request("/daypass/today");
+  }
+
+  async getDayPass(id) {
+    return this.request(`/daypass/${id}`);
+  }
+
+  async createDayPass(data) {
+    return this.request("/daypass", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateDayPass(id, data) {
+    return this.request(`/daypass/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async payDayPass(id, data) {
+    return this.request(`/daypass/${id}/pay`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async checkoutDayPass(id) {
+    return this.request(`/daypass/${id}/checkout`, {
+      method: "PATCH",
+    });
+  }
+
+  async cancelDayPass(id, reason) {
+    return this.request(`/daypass/${id}/cancel`, {
+      method: "PATCH",
+      body: JSON.stringify({ reason }),
+    });
+  }
 }
 
 export const api = new ApiService();
