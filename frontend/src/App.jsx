@@ -43,7 +43,7 @@ function App() {
           <Route path="/hotel-reports" component={HotelReports} />
           <Route path="/seasonal-prices" component={SeasonalPrices} />
           <Route path="/maintenance" component={Maintenance} />
-          <Route path="/day-pass" component={DayPass} />
+          <Route path="/daypass" component={DayPass} />
           {/* Rutas públicas */}
           <Route path="/" component={Landing} />
           <Route path="/search" component={SearchRooms} />
