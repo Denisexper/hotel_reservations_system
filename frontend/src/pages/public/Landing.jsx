@@ -16,7 +16,7 @@ const TYPE_DESCRIPTIONS = {
 const FEATURES = [
     {
         title: "Ubicación Privilegiada",
-        description: "En el corazón de la ciudad, cerca de los principales atractivos turísticos y zonas comerciales.",
+        description: "En el corazón de playa el cuco, cerca de los principales atractivos turísticos y zonas comerciales.",
         icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
     },
     {
@@ -135,7 +135,7 @@ function Landing() {
                         style={{ "font-family": "'Montserrat', sans-serif", "font-weight": "300" }}
                     >
                         Donde el lujo y la comodidad se encuentran. Descubre una experiencia
-                        de hospedaje única en el corazón de San Salvador.
+                        de hospedaje única en el corazón de playa el Cuco.
                     </p>
 
                     {/* Search Form */}

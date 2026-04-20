@@ -7,7 +7,7 @@ import { useNavigate } from "@solidjs/router";
 import { showToast } from "../utils/toast";
 import Pagination from "../components/Pagination";
 
-const ROOM_TYPES = ["todas", "Simple", "Doble", "Suite", "Deluxe", "Presidencial"];
+const ROOM_TYPES = ["todas", "Simple", "Doble", "Suite", "Deluxe", "Presidencial", "Single", "Triple", "Twin"];
 const MODIFIER_TYPES = [
     { value: "porcentaje", label: "Porcentaje" },
     { value: "fijo", label: "Monto Fijo" },

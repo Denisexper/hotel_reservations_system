@@ -11,7 +11,7 @@ import Pagination from "../components/Pagination";
 const BACKEND_URL = "http://localhost:4000";
 
 // Tipos de habitación (match con el enum del modelo)
-const ROOM_TYPES = ["Simple", "Doble", "Suite", "Deluxe", "Presidencial"];
+const ROOM_TYPES = ["Simple", "Doble", "Suite", "Deluxe", "Presidencial", "Single", "Triple", "Twin"];
 
 // Estados de habitación
 const ROOM_STATUSES = ["disponible", "ocupada", "mantenimiento", "limpieza"];
