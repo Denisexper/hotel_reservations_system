@@ -167,6 +167,10 @@ function SearchRooms() {
                                     <option value="Suite">Suite</option>
                                     <option value="Deluxe">Deluxe</option>
                                     <option value="Presidencial">Presidencial</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Triple">Triple</option>
+                                    <option value="Twin">Twin</option>
+
                                 </select>
                             </div>
                             <div>
