@@ -421,7 +421,11 @@ function Payments() {
                                   </Show>
 
                                   {/* Reembolsar */}
-                                  <Show when={payment.status === "completado" && auth.hasPermission("payments.update")}>
+                                  <Show when={
+                                    payment.status === "completado" &&
+                                    auth.hasPermission("payments.update") &&
+                                    payment.reservation?.status !== 'check-out'
+                                  }>
                                     <button
                                       onClick={() => openRefundModal(payment)}
                                       class="text-xs px-3 py-1.5 rounded-md border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
