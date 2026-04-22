@@ -103,7 +103,7 @@ export const seedRoles = async () => {
             {
                 name: 'recepcionista',
                 displayName: 'Recepcionista',
-                description: 'Puede gestionar habitaciones y reservas',
+                description: 'Puede gestionar habitaciones, reservas y mantenimientos',
                 permissions: [
                     PERMISSIONS.ROOMS_READ,
                     PERMISSIONS.ROOMS_CREATE,
@@ -119,6 +119,7 @@ export const seedRoles = async () => {
                     PERMISSIONS.PAYMENTS_CREATE,
                     PERMISSIONS.MAINTENANCE_CREATE,
                     PERMISSIONS.MAINTENANCE_READ,
+                    PERMISSIONS.MAINTENANCE_UPDATE,
                     PERMISSIONS.RESERVATIONS_CREATE_OTHERS,
                 ],
                 isSystem: true
