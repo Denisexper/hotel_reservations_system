@@ -34,6 +34,14 @@ const routes = [
         middlewares: []
     },
     {
+        method: 'PATCH',
+        path: '/users/change-password',
+        permission: null,
+        description: 'Cambiar contraseña del usuario autenticado',
+        handler: controller.changePassword,
+        middlewares: []
+    },
+    {
         method: 'GET',
         path: '/users/:id',
         permission: 'users.read',
@@ -69,11 +77,9 @@ const routes = [
 
 // registrar rutas automáticamente
 routes.forEach(route => {
-    const allMiddlewares = [
-        authMiddleware,
-        checkPermission(route.permission),
-        ...route.middlewares
-    ];
+    const allMiddlewares = route.permission
+        ? [authMiddleware, checkPermission(route.permission), ...route.middlewares]
+        : [authMiddleware, ...route.middlewares];
 
     router[route.method.toLowerCase()](
         route.path,

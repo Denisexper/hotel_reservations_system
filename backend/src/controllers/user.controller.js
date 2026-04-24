@@ -124,6 +124,7 @@ export class userController {
           role: user.role.name, // Nombre del rol para el frontend
           roleId: user.role._id,
           permissions: user.role.permissions,
+          mustChangePassword: user.mustChangePassword || false, //para que el frontend sepa si debe redirigir al usuario a cambiar su contraseña temporal en el caso de los clientes registrados por admin sin contraseña.
         },
       });
     } catch (error) {
@@ -164,18 +165,14 @@ export class userController {
   //crear un usuario, ruta protegida para admins
   async createUser(req, res) {
     try {
-      const { name, email, password, role } = req.body;
+      const { name, email, password, role, phone, documentType, documentNumber, address, country } = req.body;
 
       const emailExis = await userModel.findOne({ email });
       if (emailExis) {
-        return res.status(400).json({
-          msj: "email ya esta en uso",
-        });
+        return res.status(400).json({ msj: "email ya esta en uso" });
       }
 
-      const hasPassword = await bcrypt.hash(password, 10);
-
-      // Buscar rol por nombre o por ID
+      // Buscar rol
       let roleDoc;
       if (mongoose.Types.ObjectId.isValid(role)) {
         roleDoc = await Role.findById(role);
@@ -184,41 +181,66 @@ export class userController {
       }
 
       if (!roleDoc) {
-        return res.status(400).json({
-          msj: "Rol no válido",
-        });
+        return res.status(400).json({ msj: "Rol no válido" });
       }
+
+      // Si es cliente y no se envía password, generar contraseña temporal
+      let finalPassword = password;
+      let isTemporary = false;
+
+      if (roleDoc.name === 'cliente' && !password) {
+        const random = Math.random().toString(36).substring(2, 8);
+        finalPassword = `Hotel2026!${random}`;
+        isTemporary = true;
+      }
+
+      const hasPassword = await bcrypt.hash(finalPassword, 10);
 
       const newUser = await userModel.create({
         name,
         email,
         password: hasPassword,
         role: roleDoc._id,
+        phone: phone || null,
+        documentType: documentType || null,
+        documentNumber: documentNumber || null,
+        address: address || null,
+        country: country || 'El Salvador',
+        mustChangePassword: isTemporary
       });
 
-      const token = generateToken({
-        id: newUser._id,
-        email: newUser.email,
-        roleId: roleDoc._id,
-      });
+      // Si es cliente con contraseña temporal, enviar email de bienvenida
+      if (isTemporary) {
+        try {
+          const { sendWelcomeEmail } = await import('../services/email.service.js');
+          sendWelcomeEmail({
+            to: email,
+            clientName: name,
+            tempPassword: finalPassword
+          });
+        } catch (emailError) {
+          console.error('Error enviando email de bienvenida:', emailError.message);
+        }
+      }
 
       res.status(201).json({
-        msj: "user creado exitosamente",
-        token,
-        newUser: {
+        msj: isTemporary
+          ? "Cliente registrado exitosamente. Se envió contraseña temporal por email."
+          : "Usuario creado exitosamente",
+        data: {
           id: newUser._id,
           name: newUser.name,
           email: newUser.email,
           role: roleDoc.name,
           roleId: roleDoc._id,
+          phone: newUser.phone,
+          documentType: newUser.documentType,
+          documentNumber: newUser.documentNumber,
         },
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({
-        msj: "error de servidor",
-        error: error.message,
-      });
+      res.status(500).json({ msj: "error de servidor", error: error.message });
     }
   }
 
@@ -597,6 +619,39 @@ export class userController {
       });
     } catch (error) {
       res.status(500).json({ msj: "Error al buscar clientes", error: error.message });
+    }
+  }
+
+  // Cambiar contraseña
+  async changePassword(req, res) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ msj: "La contraseña actual y la nueva son obligatorias" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ msj: "La nueva contraseña debe tener al menos 6 caracteres" });
+      }
+
+      const user = await userModel.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ msj: "Usuario no encontrado" });
+      }
+
+      const isValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(401).json({ msj: "La contraseña actual es incorrecta" });
+      }
+
+      user.password = await bcrypt.hash(newPassword, 10);
+      user.mustChangePassword = false;
+      await user.save();
+
+      res.status(200).json({ msj: "Contraseña actualizada correctamente" });
+    } catch (error) {
+      res.status(500).json({ msj: "Error al cambiar contraseña", error: error.message });
     }
   }
 }

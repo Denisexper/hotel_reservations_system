@@ -43,7 +43,7 @@ const userSchema = new Schema({
     },
     documentType: {
         type: String,
-        enum: ['DUI','DNI', 'Passport', 'DriverLicense'],
+        enum: ['DUI', 'DNI', 'Passport', 'DriverLicense'],
     },
     documentNumber: {
         type: String,
@@ -62,7 +62,11 @@ const userSchema = new Schema({
     },
     lastLogin: {
         type: Date
-    }
+    },
+    mustChangePassword: {
+        type: Boolean,
+        default: false
+    },
 }, {
     timestamps: true
 });

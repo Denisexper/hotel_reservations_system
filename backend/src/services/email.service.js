@@ -347,4 +347,35 @@ export const sendDayPassConfirmation = async ({ to, visitorName, dayPass }) => {
     });
 };
 
+// Email de bienvenida con credenciales temporales
+export const sendWelcomeEmail = async ({ to, clientName, tempPassword }) => {
+    const content = `
+        <h2>👋 ¡Bienvenido a Hotel Reservations!</h2>
+        <p>Hola <strong>${clientName}</strong>,</p>
+        <p>Se ha creado tu cuenta en nuestro sistema de reservas. Aquí están tus credenciales de acceso:</p>
+        
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">${to}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Contraseña temporal:</span>
+                <span class="info-value" style="font-family: monospace; font-size: 16px; color: #4361ee;">${tempPassword}</span>
+            </div>
+        </div>
+        
+        <p><span class="badge badge-warning">Te recomendamos cambiar tu contraseña al iniciar sesión por primera vez.</span></p>
+        
+        <p style="color: #666; font-size: 14px;">Con tu cuenta podrás ver tus reservas, descargar comprobantes y gestionar tu información personal.</p>
+    `;
+
+    await transporter.sendMail({
+        from: `"Hotel Reservations" <${email_user}>`,
+        to,
+        subject: '👋 Bienvenido a Hotel Reservations - Tus credenciales de acceso',
+        html: baseTemplate(content)
+    });
+};
+
 export default transporter;
