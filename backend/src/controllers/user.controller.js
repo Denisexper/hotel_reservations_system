@@ -566,4 +566,37 @@ export class userController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  // Buscar clientes para asignar reserva (autocompletado)
+  async searchClients(req, res) {
+    try {
+      const { q } = req.query;
+
+      if (!q || q.length < 2) {
+        return res.status(400).json({ msj: "La búsqueda debe tener al menos 2 caracteres" });
+      }
+
+      const clientRole = await Role.findOne({ name: 'cliente' });
+
+      const clients = await userModel.find({
+        role: clientRole._id,
+        isActive: true,
+        $or: [
+          { name: { $regex: q, $options: 'i' } },
+          { email: { $regex: q, $options: 'i' } },
+          { documentNumber: { $regex: q, $options: 'i' } },
+          { phone: { $regex: q, $options: 'i' } }
+        ]
+      })
+        .select('name email phone documentType documentNumber')
+        .limit(10);
+
+      res.status(200).json({
+        msj: "Clientes encontrados",
+        data: clients
+      });
+    } catch (error) {
+      res.status(500).json({ msj: "Error al buscar clientes", error: error.message });
+    }
+  }
 }

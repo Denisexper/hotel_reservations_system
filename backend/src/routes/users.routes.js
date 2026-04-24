@@ -27,6 +27,14 @@ const routes = [
     },
     {
         method: 'GET',
+        path: '/users/clients/search',
+        permission: 'reservations.create_others',
+        description: 'Buscar clientes para asignar reserva',
+        handler: controller.searchClients,
+        middlewares: []
+    },
+    {
+        method: 'GET',
         path: '/users/:id',
         permission: 'users.read',
         description: 'Obtener un usuario',
