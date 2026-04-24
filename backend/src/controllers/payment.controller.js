@@ -126,6 +126,18 @@ export class PaymentController {
                 return res.status(400).json({ msj: "Esta reserva ya fue pagada" });
             }
 
+            // Validar datos del cliente para crédito fiscal
+            if (receiptType === 'credito_fiscal') {
+                const { userModel } = await import('../models/user.model.js');
+                const clientData = await userModel.findById(reservation.client._id);
+
+                if (!clientData.documentNumber || !clientData.documentType) {
+                    return res.status(400).json({
+                        msj: "Para Crédito Fiscal se requiere DUI/documento del cliente. Actualiza los datos del cliente primero."
+                    });
+                }
+            }
+
             // Generar IDs únicos
             const transactionId = Payment.generateTransactionId();
             const receiptNumber = await Payment.generateReceiptNumber(receiptType);
@@ -253,7 +265,7 @@ export class PaymentController {
                 .populate({
                     path: 'reservation',
                     populate: [
-                        { path: 'client', select: 'name email phone documentType documentNumber' },
+                        { path: 'client', select: 'name email phone documentType documentNumber address' },
                         { path: 'room', select: 'roomNumber type basePrice' }
                     ]
                 })
@@ -344,10 +356,16 @@ export class PaymentController {
                 doc.font('Helvetica').text(client.phone, rightCol, y);
             }
 
-            if (isCredito && client.documentType && client.documentNumber) {
+            if (client.documentType && client.documentNumber) {
                 y += 18;
                 doc.font('Helvetica-Bold').text('Documento:', leftCol, y);
                 doc.font('Helvetica').text(`${client.documentType}: ${client.documentNumber}`, rightCol, y);
+            }
+
+            if (client.address) {
+                y += 18;
+                doc.font('Helvetica-Bold').text('Dirección:', leftCol, y);
+                doc.font('Helvetica').text(client.address, rightCol, y);
             }
 
             doc.moveDown(2);
