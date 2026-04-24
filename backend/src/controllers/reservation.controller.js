@@ -106,24 +106,11 @@ export class ReservationController {
             const canCreateForOthers = req.user.permissions.includes('reservations.create_others');
             let userId;
 
-            if (canCreateForOthers && req.body.clientEmail) {
+            if (canCreateForOthers && req.body.client) {
                 const { userModel } = await import('../models/user.model.js');
-                let client = await userModel.findOne({ email: req.body.clientEmail });
-
+                const client = await userModel.findById(req.body.client);
                 if (!client) {
-                    const { Role } = await import('../models/role.model.js');
-                    const clientRole = await Role.findOne({ name: 'cliente' });
-                    const bcrypt = await import('bcrypt');
-                    const tempPassword = await bcrypt.hash(req.body.clientEmail, 10);
-
-                    client = await userModel.create({
-                        name: req.body.clientName || 'Cliente',
-                        email: req.body.clientEmail,
-                        phone: req.body.clientPhone || null,
-                        password: tempPassword,
-                        role: clientRole._id,
-                        isActive: true
-                    });
+                    return res.status(404).json({ msj: "Cliente no encontrado. Regístralo primero." });
                 }
                 userId = client._id;
             } else {
