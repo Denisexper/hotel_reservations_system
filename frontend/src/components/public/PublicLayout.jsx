@@ -1,4 +1,4 @@
-import { A, useNavigate } from "@solidjs/router";
+import { A, useNavigate, useLocation } from "@solidjs/router";
 import { useAuth } from "../../context/AuthContext";
 import { createSignal, onMount, onCleanup, Show } from "solid-js";
 import hotelLogo from "../../assets/hotel_icon.png";
@@ -9,6 +9,7 @@ const BACKEND_URL = "http://localhost:4000";
 function PublicLayout(props) {
     const auth = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [scrolled, setScrolled] = createSignal(false);
     const [mobileMenu, setMobileMenu] = createSignal(false);
     const [userDropdown, setUserDropdown] = createSignal(false);
@@ -31,6 +32,10 @@ function PublicLayout(props) {
 
         // Forzar modo claro en páginas públicas
         document.documentElement.classList.remove("dark");
+
+        if (auth.mustChangePassword?.() && location.pathname !== "/change-password") {
+            navigate("/change-password");
+        }
     });
 
     onCleanup(() => {

@@ -24,6 +24,7 @@ const RoomDetail = lazy(() => import("./pages/public/RoomDetail"));
 const ClientLogin = lazy(() => import("./pages/public/ClientLogin"));
 const ClientRegister = lazy(() => import("./pages/public/ClientRegister"));
 const ClientReservations = lazy(() => import("./pages/public/ClientReservations"));
+const ChangePassword = lazy(() => import("./pages/public/ChangePassword"));
 
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
           <Route path="/client-login" component={ClientLogin} />
           <Route path="/client-register" component={ClientRegister} />
           <Route path="/my-reservations" component={ClientReservations} />
+          <Route path="/change-password" component={ChangePassword} />
 
           {/* <Route path="/" component={Login} /> */}
         </SolidRouter>

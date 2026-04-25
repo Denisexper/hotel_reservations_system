@@ -591,6 +591,14 @@ function ClientReservations() {
                                 </select>
                             </div>
 
+                            <Show when={receiptType() === "credito_fiscal" && !paymentReservation()?.client?.documentNumber}>
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                    <p class="text-xs text-yellow-700">
+                                        ⚠️ No tienes DUI/documento registrado en tu perfil. Contacta al personal del hotel para actualizar tus datos antes de emitir Crédito Fiscal.
+                                    </p>
+                                </div>
+                            </Show>
+
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">Notas (opcional)</label>
                                 <textarea
@@ -605,7 +613,7 @@ function ClientReservations() {
                                     Cancelar
                                 </button>
                                 <button
-                                    onClick={submitPayment} disabled={paymentLoading()}
+                                    onClick={submitPayment} disabled={paymentLoading() || (receiptType() === "credito_fiscal" && !paymentReservation()?.client?.documentNumber)}
                                     class="flex-1 py-3 bg-[#c9a84c] hover:bg-[#b8963f] text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                                 >
                                     {paymentLoading() ? "Procesando..." : "Confirmar Pago"}

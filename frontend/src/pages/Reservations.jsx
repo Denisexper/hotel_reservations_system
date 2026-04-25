@@ -1117,13 +1117,20 @@ function Reservations() {
                     <For each={RECEIPT_TYPES}>{(r) => <option value={r.value}>{r.label}</option>}</For>
                   </select>
                 </div>
+                <Show when={receiptType() === "credito_fiscal" && !paymentReservation()?.client?.documentNumber}>
+                  <div class="bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-lg p-3">
+                    <p class="text-xs text-yellow-700 dark:text-yellow-400">
+                      ⚠️ El cliente no tiene DUI/documento registrado. Actualiza sus datos antes de emitir Crédito Fiscal.
+                    </p>
+                  </div>
+                </Show>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas (opcional)</label>
                   <textarea class="input-field w-full" rows="2" placeholder="Notas del pago..." value={paymentNotes()} onInput={(e) => setPaymentNotes(e.target.value)} />
                 </div>
                 <div class="flex gap-3 pt-2">
                   <button onClick={() => setShowPaymentModal(false)} class="btn-secondary flex-1">Cancelar</button>
-                  <button onClick={submitPayment} disabled={paymentLoading()} class="btn-primary flex-1 disabled:opacity-50">{paymentLoading() ? "Procesando..." : "Confirmar Pago"}</button>
+                  <button onClick={submitPayment} disabled={paymentLoading() || (receiptType() === "credito_fiscal" && !paymentReservation()?.client?.documentNumber)} class="btn-primary flex-1 disabled:opacity-50">{paymentLoading() ? "Procesando..." : "Confirmar Pago"}</button>
                 </div>
               </div>
             </div>

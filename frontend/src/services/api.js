@@ -610,6 +610,13 @@ class ApiService {
   async searchClients(query) {
     return this.request(`/users/clients/search?q=${encodeURIComponent(query)}`);
   }
+
+  async changePassword(currentPassword, newPassword) {
+    return this.request("/users/change-password", {
+      method: "PATCH",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
 }
 
 export const api = new ApiService();

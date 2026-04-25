@@ -23,6 +23,12 @@ function ClientLogin() {
 
         if (result.success) {
             showToast.success(`¡Bienvenido, ${result.user.name}!`);
+
+            if (result.user.mustChangePassword) {
+                navigate("/change-password");
+                return;
+            }
+
             // Redirigir a returnUrl si existe, sino a la landing
             const returnUrl = searchParams.returnUrl;
             if (returnUrl) {

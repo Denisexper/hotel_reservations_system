@@ -12,6 +12,7 @@ export function AuthProvider(props) {
   const [user, setUser] = createSignal(null);
   const [loading, setLoading] = createSignal(true);
   const [initialized, setInitialized] = createSignal(false);
+  const [mustChangePassword, setMustChangePassword] = createSignal(false);
 
   createEffect(async () => {
     if (initialized()) return;
@@ -27,6 +28,7 @@ export function AuthProvider(props) {
     try {
       const userData = await api.getMe();
       setUser(userData.data);
+      setMustChangePassword(userData.data?.mustChangePassword || false);
     } catch (error) {
       console.error("Error al verificar token:", error);
       api.removeToken();
@@ -41,6 +43,7 @@ export function AuthProvider(props) {
     try {
       const data = await api.login(email, password);
       setUser(data.user);
+      setMustChangePassword(data.user?.mustChangePassword || false);
       return { success: true, user: data.user };
     } catch (error) {
       return { success: false, error: error.message };
@@ -101,6 +104,8 @@ export function AuthProvider(props) {
     hasPermission,
     refreshUser,
     isAuthenticated,
+    mustChangePassword,
+    setMustChangePassword,
   };
 
   return (
