@@ -6,6 +6,8 @@ import { Payment } from "../models/payment.model.js";
 import { SeasonalPrice } from "../models/seasonalPrice.model.js";
 import { MaintenanceLog } from "../models/maintenanceLog.model.js";
 import { DayPass } from "../models/dayPass.model.js";
+import { Amenity } from "../models/amenity.model.js";
+import { RoomType } from "../models/roomType.model.js";
 
 // Mapa de modelos
 const models = {
@@ -16,6 +18,8 @@ const models = {
     seasonals: SeasonalPrice,
     maintenance: MaintenanceLog,
     daypass: DayPass,
+    amenities: Amenity,
+    room_types: RoomType,
 };
 
 // Configuración de qué campos mostrar por recurso
@@ -68,6 +72,16 @@ const resourceConfig = {
         displayFields: ['code', 'visitorName', 'numberOfGuests', 'totalAmount', 'paymentStatus', 'status'],
         populateFields: [],
         getDisplayName: (doc) => `${doc.code} - ${doc.visitorName}`
+    },
+    amenities: {
+        displayFields: ['name', 'isActive'],
+        populateFields: [],
+        getDisplayName: (doc) => `Amenidad: ${doc.name}`
+    },
+    room_types: {
+        displayFields: ['name', 'isActive'],
+        populateFields: [],
+        getDisplayName: (doc) => `Tipo: ${doc.name}`
     }
 };
 

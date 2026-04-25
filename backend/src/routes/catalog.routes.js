@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { CatalogController } from '../controllers/catalog.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { checkPermission } from '../middleware/role.middleware.js';
+import { logAction } from '../middleware/logger.middleware.js';
 import { PERMISSIONS } from '../db/seedRoles.js';
 
 const router = Router();
@@ -23,7 +24,7 @@ const routes = [
         permission: PERMISSIONS.CATALOGS_CREATE,
         description: 'Crear nueva amenidad',
         handler: controller.createAmenity,
-        middlewares: []
+        middlewares: [logAction('create', 'amenities')]
     },
     {
         method: 'PUT',
@@ -31,7 +32,7 @@ const routes = [
         permission: PERMISSIONS.CATALOGS_UPDATE,
         description: 'Actualizar amenidad',
         handler: controller.updateAmenity,
-        middlewares: []
+        middlewares: [logAction('update', 'amenities')]
     },
     {
         method: 'DELETE',
@@ -39,7 +40,7 @@ const routes = [
         permission: PERMISSIONS.CATALOGS_DELETE,
         description: 'Eliminar amenidad',
         handler: controller.deleteAmenity,
-        middlewares: []
+        middlewares: [logAction('delete', 'amenities')]
     },
 
     // TIPOS DE HABITACIÓN
@@ -57,7 +58,7 @@ const routes = [
         permission: PERMISSIONS.CATALOGS_CREATE,
         description: 'Crear nuevo tipo de habitación',
         handler: controller.createRoomType,
-        middlewares: []
+        middlewares: [logAction('create', 'room_types')]
     },
     {
         method: 'PUT',
@@ -65,7 +66,7 @@ const routes = [
         permission: PERMISSIONS.CATALOGS_UPDATE,
         description: 'Actualizar tipo de habitación',
         handler: controller.updateRoomType,
-        middlewares: []
+        middlewares: [logAction('update', 'room_types')]
     },
     {
         method: 'DELETE',
@@ -73,7 +74,7 @@ const routes = [
         permission: PERMISSIONS.CATALOGS_DELETE,
         description: 'Eliminar tipo de habitación',
         handler: controller.deleteRoomType,
-        middlewares: []
+        middlewares: [logAction('delete', 'room_types')]
     },
 ];
 
