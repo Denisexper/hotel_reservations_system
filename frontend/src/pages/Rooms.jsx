@@ -10,25 +10,8 @@ import Pagination from "../components/Pagination";
 // URL base del backend para las imágenes
 const BACKEND_URL = "http://localhost:4000";
 
-// Tipos de habitación (match con el enum del modelo)
-const ROOM_TYPES = ["Simple", "Doble", "Suite", "Deluxe", "Presidencial", "Single", "Triple", "Twin"];
-
 // Estados de habitación
 const ROOM_STATUSES = ["disponible", "ocupada", "mantenimiento", "limpieza"];
-
-// Amenidades sugeridas
-const SUGGESTED_AMENITIES = [
-  "WiFi",
-  "AC",
-  "TV",
-  "Minibar",
-  "Caja Fuerte",
-  "Balcón",
-  "Vista al Mar",
-  "Jacuzzi",
-  "Cocina",
-  "Sala de Estar",
-];
 
 function Rooms() {
   const auth = useAuth();
@@ -39,6 +22,12 @@ function Rooms() {
     navigate("/dashboard");
     return null;
   }
+
+  // Catálogos dinámicos
+  const [catalogAmenities] = createResource(() => api.getAmenities());
+  const [catalogRoomTypes] = createResource(() => api.getRoomTypes());
+  const amenityList = () => catalogAmenities()?.data?.map(a => a.name) || [];
+  const roomTypeList = () => catalogRoomTypes()?.data?.map(t => t.name) || [];
 
   // Paginación
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -446,7 +435,7 @@ function Rooms() {
                 onChange={(e) => setTypeInput(e.target.value)}
               >
                 <option value="">Todos los tipos</option>
-                <For each={ROOM_TYPES}>
+                <For each={roomTypeList()}>
                   {(type) => <option value={type}>{type}</option>}
                 </For>
               </select>
@@ -788,7 +777,7 @@ function Rooms() {
                       onChange={(e) => setFormType(e.target.value)}
                       required
                     >
-                      <For each={ROOM_TYPES}>
+                      <For each={roomTypeList()}>
                         {(type) => <option value={type}>{type}</option>}
                       </For>
                     </select>
@@ -877,7 +866,7 @@ function Rooms() {
                     Amenidades
                   </label>
                   <div class="flex flex-wrap gap-2">
-                    <For each={SUGGESTED_AMENITIES}>
+                    <For each={amenityList()}>
                       {(amenity) => (
                         <button
                           type="button"

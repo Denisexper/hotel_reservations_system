@@ -611,6 +611,58 @@ class ApiService {
     return this.request(`/users/clients/search?q=${encodeURIComponent(query)}`);
   }
 
+  // ============================================
+  // CATALOGS (Amenidades y Tipos de Habitación)
+  // ============================================
+
+  async getAmenities() {
+    return this.request("/catalogs/amenities");
+  }
+
+  async createAmenity(name) {
+    return this.request("/catalogs/amenities", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async updateAmenity(id, data) {
+    return this.request(`/catalogs/amenities/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAmenity(id) {
+    return this.request(`/catalogs/amenities/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getRoomTypes() {
+    return this.request("/catalogs/room-types");
+  }
+
+  async createRoomType(name) {
+    return this.request("/catalogs/room-types", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async updateRoomType(id, data) {
+    return this.request(`/catalogs/room-types/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteRoomType(id) {
+    return this.request(`/catalogs/room-types/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   async changePassword(currentPassword, newPassword) {
     return this.request("/users/change-password", {
       method: "PATCH",

@@ -10,10 +10,7 @@ const roomSchema = new Schema({
     type: {
         type: String,
         required: [true, 'El tipo de habitación es obligatorio'],
-        enum: {
-            values: ['Simple', 'Doble', 'Suite', 'Deluxe', 'Presidencial', "Single", "Triple", "Twin"],
-            message: '{VALUE} no es un tipo de habitación válido'
-        }
+        trim: true
     },
     capacity: {
         type: Number,

@@ -1,4 +1,6 @@
 import { Role } from '../models/role.model.js';
+import { Amenity } from '../models/amenity.model.js';
+import { RoomType } from '../models/roomType.model.js';
 
 export const PERMISSIONS = {
     USERS_READ: 'users.read',
@@ -35,6 +37,10 @@ export const PERMISSIONS = {
     DAYPASS_CREATE: 'daypass.create',
     DAYPASS_UPDATE: 'daypass.update',
     DAYPASS_DELETE: 'daypass.delete',
+    CATALOGS_READ: 'catalogs.read',
+    CATALOGS_CREATE: 'catalogs.create',
+    CATALOGS_UPDATE: 'catalogs.update',
+    CATALOGS_DELETE: 'catalogs.delete',
 };
 
 export const seedRoles = async () => {
@@ -96,7 +102,11 @@ export const seedRoles = async () => {
                     PERMISSIONS.MAINTENANCE_CREATE,
                     PERMISSIONS.MAINTENANCE_UPDATE,
                     PERMISSIONS.MAINTENANCE_DELETE,
-                    PERMISSIONS.RESERVATIONS_CREATE_OTHERS
+                    PERMISSIONS.RESERVATIONS_CREATE_OTHERS,
+                    PERMISSIONS.CATALOGS_READ,
+                    PERMISSIONS.CATALOGS_CREATE,
+                    PERMISSIONS.CATALOGS_UPDATE,
+                    PERMISSIONS.CATALOGS_DELETE,
                 ],
                 isSystem: true
             },
@@ -121,6 +131,7 @@ export const seedRoles = async () => {
                     PERMISSIONS.MAINTENANCE_READ,
                     PERMISSIONS.MAINTENANCE_UPDATE,
                     PERMISSIONS.RESERVATIONS_CREATE_OTHERS,
+                    PERMISSIONS.CATALOGS_READ,
                 ],
                 isSystem: true
             },
@@ -171,6 +182,37 @@ export const seedRoles = async () => {
         }
 
         console.log('🎉 Seed de roles completado');
+
+        // Seed amenidades iniciales
+        const defaultAmenities = [
+            'WiFi', 'AC', 'TV', 'Minibar', 'Caja Fuerte',
+            'Balcón', 'Vista al Mar', 'Jacuzzi', 'Cocina',
+            'Sala de Estar', 'Frigobar', 'Estacionamiento',
+            'Piscina', 'Gimnasio', 'Servicio a la habitación'
+        ];
+        for (const name of defaultAmenities) {
+            await Amenity.findOneAndUpdate(
+                { name },
+                { name, isActive: true },
+                { upsert: true }
+            );
+        }
+        console.log('✅ Amenidades iniciales sincronizadas');
+
+        // Seed tipos de habitación iniciales
+        const defaultRoomTypes = [
+            'Simple', 'Doble', 'Suite', 'Deluxe',
+            'Presidencial', 'Single', 'Triple', 'Twin'
+        ];
+        for (const name of defaultRoomTypes) {
+            await RoomType.findOneAndUpdate(
+                { name },
+                { name, isActive: true },
+                { upsert: true }
+            );
+        }
+        console.log('✅ Tipos de habitación iniciales sincronizados');
+
     } catch (error) {
         console.error('❌ Error en seed:', error);
         throw error;
