@@ -1,4 +1,4 @@
-import { createSignal, createResource, Show, For, onMount } from "solid-js";
+import { createSignal, createResource, Show, For, onMount, onCleanup } from "solid-js";
 import { api } from "../services/api";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Layout from "../components/layout/Layout";
@@ -28,6 +28,13 @@ const RECEIPT_TYPES = [
   { value: "credito_fiscal", label: "Crédito Fiscal" },
 ];
 
+const DOCUMENT_TYPES = [
+  { value: "DUI", label: "DUI" },
+  { value: "DNI", label: "DNI" },
+  { value: "Passport", label: "Pasaporte" },
+  { value: "DriverLicense", label: "Licencia de Conducir" },
+];
+
 function Reservations() {
   const auth = useAuth();
   const navigate = useNavigate();
@@ -37,7 +44,6 @@ function Reservations() {
     return null;
   }
 
-  // Determinar si es staff o cliente
   const isStaff = () =>
     auth.hasPermission("reservations.create_others") ||
     auth.hasPermission("reservations.checkin") ||
@@ -50,12 +56,10 @@ function Reservations() {
   const [currentPage, setCurrentPage] = createSignal(1);
   const [limit] = createSignal(10);
 
-  // Filtros
   const [statusFilter, setStatusFilter] = createSignal("");
   const [searchFilter, setSearchFilter] = createSignal("");
   const [appliedFilters, setAppliedFilters] = createSignal({ status: "", search: "" });
 
-  // Resource de reservas
   const [reservations, { refetch }] = createResource(
     () => ({
       tab: activeTab(),
@@ -66,7 +70,6 @@ function Reservations() {
     async (params) => {
       const filters = { page: params.page, limit: params.limit };
       if (params.status) filters.status = params.status;
-
       if (params.tab === "my") {
         return api.getMyReservations(filters);
       } else {
@@ -120,13 +123,13 @@ function Reservations() {
   };
 
   // ============================================
-  // MODAL: Crear Reserva (Wizard paso a paso)
+  // MODAL: Crear Reserva (Wizard)
   // ============================================
   const [showCreateModal, setShowCreateModal] = createSignal(false);
   const [createStep, setCreateStep] = createSignal(1);
   const [createLoading, setCreateLoading] = createSignal(false);
 
-  // Step 1: Búsqueda
+  // Step 1: Búsqueda de disponibilidad
   const [searchCheckIn, setSearchCheckIn] = createSignal("");
   const [searchCheckOut, setSearchCheckOut] = createSignal("");
   const [searchGuests, setSearchGuests] = createSignal(1);
@@ -137,11 +140,26 @@ function Reservations() {
   // Step 2: Habitación seleccionada
   const [selectedRoom, setSelectedRoom] = createSignal(null);
 
-  // Step 3: Datos adicionales (staff)
-  const [clientEmail, setClientEmail] = createSignal("");
-  const [clientName, setClientName] = createSignal("");
-  const [clientPhone, setClientPhone] = createSignal("");
+  // Step 3: Cliente (staff) — NUEVO: buscador con autocompletado
+  const [clientSearchQuery, setClientSearchQuery] = createSignal("");
+  const [clientSearchResults, setClientSearchResults] = createSignal([]);
+  const [clientSearching, setClientSearching] = createSignal(false);
+  const [selectedClient, setSelectedClient] = createSignal(null);
+  const [showClientDropdown, setShowClientDropdown] = createSignal(false);
   const [specialRequests, setSpecialRequests] = createSignal("");
+  let searchTimeout = null;
+
+  // Modal: Registrar Cliente Nuevo
+  const [showRegisterClient, setShowRegisterClient] = createSignal(false);
+  const [registerLoading, setRegisterLoading] = createSignal(false);
+  const [registerError, setRegisterError] = createSignal("");
+  const [regName, setRegName] = createSignal("");
+  const [regEmail, setRegEmail] = createSignal("");
+  const [regPhone, setRegPhone] = createSignal("");
+  const [regDocType, setRegDocType] = createSignal("DUI");
+  const [regDocNumber, setRegDocNumber] = createSignal("");
+  const [regAddress, setRegAddress] = createSignal("");
+  const [regCountry, setRegCountry] = createSignal("El Salvador");
 
   const openCreateModal = () => {
     setCreateStep(1);
@@ -151,11 +169,97 @@ function Reservations() {
     setSearchType("");
     setAvailableRooms([]);
     setSelectedRoom(null);
-    setClientEmail("");
-    setClientName("");
-    setClientPhone("");
+    setClientSearchQuery("");
+    setClientSearchResults([]);
+    setSelectedClient(null);
     setSpecialRequests("");
     setShowCreateModal(true);
+  };
+
+  // Búsqueda de clientes con debounce
+  const handleClientSearch = (query) => {
+    setClientSearchQuery(query);
+    setSelectedClient(null);
+
+    if (searchTimeout) clearTimeout(searchTimeout);
+
+    if (query.length < 2) {
+      setClientSearchResults([]);
+      setShowClientDropdown(false);
+      return;
+    }
+
+    searchTimeout = setTimeout(async () => {
+      setClientSearching(true);
+      try {
+        const result = await api.searchClients(query);
+        setClientSearchResults(result.data || []);
+        setShowClientDropdown(true);
+      } catch (error) {
+        setClientSearchResults([]);
+      }
+      setClientSearching(false);
+    }, 300);
+  };
+
+  const selectClient = (client) => {
+    setSelectedClient(client);
+    setClientSearchQuery(client.name);
+    setShowClientDropdown(false);
+    setClientSearchResults([]);
+  };
+
+  const clearSelectedClient = () => {
+    setSelectedClient(null);
+    setClientSearchQuery("");
+    setClientSearchResults([]);
+  };
+
+  // Registrar cliente nuevo
+  const openRegisterClient = () => {
+    setRegName("");
+    setRegEmail(clientSearchQuery()); // Pre-llenar con lo que buscó
+    setRegPhone("");
+    setRegDocType("DUI");
+    setRegDocNumber("");
+    setRegAddress("");
+    setRegCountry("El Salvador");
+    setRegisterError("");
+    setShowRegisterClient(true);
+  };
+
+  const submitRegisterClient = async (e) => {
+    e.preventDefault();
+    setRegisterLoading(true);
+    setRegisterError("");
+    try {
+      const result = await api.createUser({
+        name: regName(),
+        email: regEmail(),
+        phone: regPhone(),
+        documentType: regDocType(),
+        documentNumber: regDocNumber(),
+        address: regAddress() || undefined,
+        country: regCountry(),
+        role: "cliente",
+      });
+      showToast.success(result.msj || "Cliente registrado exitosamente");
+      // Seleccionar el cliente recién creado
+      setSelectedClient({
+        _id: result.data.id,
+        name: result.data.name,
+        email: result.data.email,
+        phone: result.data.phone,
+        documentType: result.data.documentType,
+        documentNumber: result.data.documentNumber,
+      });
+      setClientSearchQuery(result.data.name);
+      setShowRegisterClient(false);
+    } catch (error) {
+      setRegisterError(error.message);
+      showToast.error(error.message);
+    }
+    setRegisterLoading(false);
   };
 
   // Step 1: Buscar disponibilidad
@@ -172,7 +276,6 @@ function Reservations() {
         guests: searchGuests(),
       };
       if (searchType()) filters.type = searchType();
-
       const result = await api.searchAvailableRooms(filters);
       setAvailableRooms(result.data || []);
       if (result.data?.length === 0) {
@@ -187,8 +290,6 @@ function Reservations() {
   // Step 2: Seleccionar habitación
   const selectRoom = (room) => {
     setSelectedRoom(room);
-    // Si es staff con permiso create_others, ir a paso 3
-    // Si es cliente, saltar directo al paso 4 (confirmar)
     if (auth.hasPermission("reservations.create_others")) {
       setCreateStep(3);
     } else {
@@ -208,15 +309,19 @@ function Reservations() {
         specialRequests: specialRequests(),
       };
 
-      // Si es staff creando para otro
-      if (auth.hasPermission("reservations.create_others") && clientEmail()) {
-        data.clientEmail = clientEmail();
-        data.clientName = clientName();
-        data.clientPhone = clientPhone();
+      // Si es staff creando para otro, enviar client ID
+      if (auth.hasPermission("reservations.create_others") && selectedClient()) {
+        data.client = selectedClient()._id;
       }
 
-      await api.createReservation(data);
-      showToast.success("Reserva creada exitosamente");
+      const result = await api.createReservation(data);
+
+      if (result.loyalty) {
+        showToast.success(`Reserva creada. Descuento fidelidad ${result.loyalty.level}: -${formatPrice(result.loyalty.discountAmount)} (${result.loyalty.discount}%)`);
+      } else {
+        showToast.success("Reserva creada exitosamente");
+      }
+
       setShowCreateModal(false);
       refetch();
     } catch (error) {
@@ -255,7 +360,6 @@ function Reservations() {
       showToast.success("Pago registrado exitosamente");
       setShowPaymentModal(false);
       refetch();
-      // Si el detalle estaba abierto, refrescarlo
       if (showDetail() && detailReservation()) {
         openDetail(detailReservation());
       }
@@ -284,9 +388,7 @@ function Reservations() {
     try {
       const result = await api.cancelReservation(cancelReservation()._id, cancelReason());
       showToast.success(result.msj || "Reserva cancelada");
-      if (result.cancellationFee) {
-        showToast.info(result.cancellationFee);
-      }
+      if (result.cancellationFee) showToast.info(result.cancellationFee);
       setShowCancelModal(false);
       refetch();
     } catch (error) {
@@ -330,7 +432,6 @@ function Reservations() {
     );
   };
 
-  // Descargar comprobante
   const downloadReceipt = async (paymentId) => {
     try {
       const blob = await api.downloadReceipt(paymentId);
@@ -350,28 +451,17 @@ function Reservations() {
   // ============================================
   // HELPERS
   // ============================================
-  const getStatusInfo = (status) => {
-    return RESERVATION_STATUSES.find((s) => s.value === status) || RESERVATION_STATUSES[0];
-  };
+  const getStatusInfo = (status) => RESERVATION_STATUSES.find((s) => s.value === status) || RESERVATION_STATUSES[0];
 
   const formatDate = (date) => {
     if (!date) return "—";
     const d = typeof date === "string" && date.match(/^\d{4}-\d{2}-\d{2}$/)
       ? new Date(date + "T12:00:00")
       : new Date(date);
-    return d.toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("es-SV", {
-      style: "currency",
-      currency: "USD",
-    }).format(price || 0);
-  };
+  const formatPrice = (price) => new Intl.NumberFormat("es-SV", { style: "currency", currency: "USD" }).format(price || 0);
 
   const calculateNights = (checkIn, checkOut) => {
     if (!checkIn || !checkOut) return 0;
@@ -393,11 +483,12 @@ function Reservations() {
     return labels[status] || status;
   };
 
-  // Obtener la fecha mínima (hoy) para los inputs date
-  const todayStr = () => {
-    const d = new Date();
-    return d.toISOString().split("T")[0];
-  };
+  const todayStr = () => new Date().toISOString().split("T")[0];
+
+  // Cleanup timeout on unmount
+  onCleanup(() => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+  });
 
   return (
     <ProtectedRoute>
@@ -406,38 +497,28 @@ function Reservations() {
           {/* Header */}
           <div class="flex justify-between items-center mb-8">
             <div>
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                Reservas
-              </h1>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Reservas</h1>
               <p class="text-gray-500 dark:text-gray-400 mt-1">
                 {isStaff() ? "Gestiona las reservas del hotel" : "Tus reservas"}
               </p>
             </div>
             <Show when={auth.hasPermission("reservations.create")}>
-              <button onClick={openCreateModal} class="btn-primary">
-                + Nueva reserva
-              </button>
+              <button onClick={openCreateModal} class="btn-primary">+ Nueva reserva</button>
             </Show>
           </div>
 
-          {/* Tabs: Todas / Mis Reservas (solo staff ve ambas) */}
+          {/* Tabs */}
           <Show when={isStaff()}>
             <div class="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-800/50 rounded-lg p-1 w-fit">
               <button
                 onClick={() => switchTab("all")}
-                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab() === "all"
-                  ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab() === "all" ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"}`}
               >
                 Todas las reservas
               </button>
               <button
                 onClick={() => switchTab("my")}
-                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab() === "my"
-                  ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                class={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab() === "my" ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"}`}
               >
                 Mis reservas
               </button>
@@ -448,87 +529,43 @@ function Reservations() {
           <div class="card mb-6">
             <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Filtros</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <select
-                class="input-field"
-                value={statusFilter()}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
+              <select class="input-field" value={statusFilter()} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="">Todos los estados</option>
-                <For each={RESERVATION_STATUSES}>
-                  {(s) => <option value={s.value}>{s.label}</option>}
-                </For>
+                <For each={RESERVATION_STATUSES}>{(s) => <option value={s.value}>{s.label}</option>}</For>
               </select>
-
               <Show when={activeTab() === "all"}>
-                <input
-                  type="text"
-                  class="input-field"
-                  placeholder="Buscar por ID de cliente..."
-                  value={searchFilter()}
-                  onInput={(e) => setSearchFilter(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && applyFilters()}
-                />
+                <input type="text" class="input-field" placeholder="Buscar por ID de cliente..." value={searchFilter()} onInput={(e) => setSearchFilter(e.target.value)} onKeyPress={(e) => e.key === "Enter" && applyFilters()} />
               </Show>
-
               <div class="flex gap-3">
-                <button onClick={applyFilters} class="btn-primary">
-                  🔍 Buscar
-                </button>
-                <button onClick={clearFilters} class="btn-secondary">
-                  ✕ Limpiar
-                </button>
+                <button onClick={applyFilters} class="btn-primary">🔍 Buscar</button>
+                <button onClick={clearFilters} class="btn-secondary">✕ Limpiar</button>
               </div>
             </div>
           </div>
 
-          {/* Tabla de Reservas */}
+          {/* Tabla */}
           <div class="card overflow-hidden p-0">
             <Show when={reservations.loading}>
-              <div class="p-8 text-center text-gray-500 dark:text-gray-400">
-                Cargando reservas...
-              </div>
+              <div class="p-8 text-center text-gray-500 dark:text-gray-400">Cargando reservas...</div>
             </Show>
-
             <Show when={reservations.error}>
               <div class="p-8 text-center text-red-500">Error al cargar reservas</div>
             </Show>
-
             <Show when={reservations()}>
-              <Show
-                when={reservations()?.data?.length > 0}
-                fallback={
-                  <div class="p-8 text-center text-gray-500 dark:text-gray-400">
-                    No se encontraron reservas
-                  </div>
-                }
-              >
+              <Show when={reservations()?.data?.length > 0} fallback={<div class="p-8 text-center text-gray-500 dark:text-gray-400">No se encontraron reservas</div>}>
                 <div class="overflow-x-auto">
                   <table class="w-full">
                     <thead>
                       <tr class="border-b border-gray-200 dark:border-gray-800">
-                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Código
-                        </th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Código</th>
                         <Show when={activeTab() === "all"}>
-                          <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Cliente
-                          </th>
+                          <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
                         </Show>
-                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Habitación
-                        </th>
-                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Fechas
-                        </th>
-                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Total
-                        </th>
-                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Estado
-                        </th>
-                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Pago
-                        </th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Habitación</th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fechas</th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pago</th>
                         <th class="px-6 py-3"></th>
                       </tr>
                     </thead>
@@ -538,11 +575,7 @@ function Reservations() {
                           const statusInfo = getStatusInfo(res.status);
                           return (
                             <tr class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                              <td class="px-6 py-4">
-                                <p class="text-sm font-mono font-medium text-gray-900 dark:text-white">
-                                  {res.reservationCode}
-                                </p>
-                              </td>
+                              <td class="px-6 py-4"><p class="text-sm font-mono font-medium text-gray-900 dark:text-white">{res.reservationCode}</p></td>
                               <Show when={activeTab() === "all"}>
                                 <td class="px-6 py-4">
                                   <p class="text-sm text-gray-900 dark:text-white">{res.client?.name || "—"}</p>
@@ -550,80 +583,30 @@ function Reservations() {
                                 </td>
                               </Show>
                               <td class="px-6 py-4">
-                                <p class="text-sm text-gray-900 dark:text-white">
-                                  #{res.room?.roomNumber}
-                                </p>
+                                <p class="text-sm text-gray-900 dark:text-white">#{res.room?.roomNumber}</p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">{res.room?.type}</p>
                               </td>
                               <td class="px-6 py-4">
-                                <p class="text-sm text-gray-700 dark:text-gray-300">
-                                  {formatDate(res.checkIn)}
-                                </p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                  → {formatDate(res.checkOut)}
-                                </p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300">{formatDate(res.checkIn)}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">→ {formatDate(res.checkOut)}</p>
                               </td>
-                              <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                {formatPrice(res.totalAmount)}
-                              </td>
-                              <td class="px-6 py-4">
-                                <span class={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                                  {statusInfo.label}
-                                </span>
-                              </td>
-                              <td class="px-6 py-4">
-                                <span class={`text-xs font-medium ${paymentStatusColor(res.paymentStatus)}`}>
-                                  {paymentStatusLabel(res.paymentStatus)}
-                                </span>
-                              </td>
+                              <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{formatPrice(res.totalAmount)}</td>
+                              <td class="px-6 py-4"><span class={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>{statusInfo.label}</span></td>
+                              <td class="px-6 py-4"><span class={`text-xs font-medium ${paymentStatusColor(res.paymentStatus)}`}>{paymentStatusLabel(res.paymentStatus)}</span></td>
                               <td class="px-6 py-4">
                                 <div class="flex items-center gap-2 justify-end flex-wrap">
-                                  {/* Ver detalle */}
-                                  <button
-                                    onClick={() => openDetail(res)}
-                                    class="text-xs px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
-                                  >
-                                    Detalle
-                                  </button>
-
-                                  {/* Pagar - si está pendiente de pago */}
+                                  <button onClick={() => openDetail(res)} class="text-xs px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 transition-colors">Detalle</button>
                                   <Show when={res.paymentStatus === "pendiente" && res.status !== "cancelada" && auth.hasPermission("payments.create")}>
-                                    <button
-                                      onClick={() => openPaymentModal(res)}
-                                      class="text-xs px-3 py-1.5 rounded-md border border-green-200 dark:border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors"
-                                    >
-                                      Pagar
-                                    </button>
+                                    <button onClick={() => openPaymentModal(res)} class="text-xs px-3 py-1.5 rounded-md border border-green-200 dark:border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors">Pagar</button>
                                   </Show>
-
-                                  {/* Check-in */}
                                   <Show when={res.status === "confirmada" && res.paymentStatus === "pagado" && auth.hasPermission("reservations.checkin")}>
-                                    <button
-                                      onClick={() => handleCheckIn(res)}
-                                      class="text-xs px-3 py-1.5 rounded-md border border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-                                    >
-                                      Check-in
-                                    </button>
+                                    <button onClick={() => handleCheckIn(res)} class="text-xs px-3 py-1.5 rounded-md border border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors">Check-in</button>
                                   </Show>
-
-                                  {/* Check-out */}
                                   <Show when={res.status === "check-in" && auth.hasPermission("reservations.checkout")}>
-                                    <button
-                                      onClick={() => handleCheckOut(res)}
-                                      class="text-xs px-3 py-1.5 rounded-md border border-purple-200 dark:border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors"
-                                    >
-                                      Check-out
-                                    </button>
+                                    <button onClick={() => handleCheckOut(res)} class="text-xs px-3 py-1.5 rounded-md border border-purple-200 dark:border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors">Check-out</button>
                                   </Show>
-
-                                  {/* Cancelar */}
-                                  <Show when={!["cancelada", "check-out"].includes(res.status) && auth.hasPermission("reservations.update")}>
-                                    <button
-                                      onClick={() => openCancelModal(res)}
-                                      class="text-xs px-3 py-1.5 rounded-md border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                                    >
-                                      Cancelar
-                                    </button>
+                                  <Show when={!["cancelada", "check-out", "check-in"].includes(res.status) && auth.hasPermission("reservations.update")}>
+                                    <button onClick={() => openCancelModal(res)} class="text-xs px-3 py-1.5 rounded-md border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">Cancelar</button>
                                   </Show>
                                 </div>
                               </td>
@@ -634,13 +617,8 @@ function Reservations() {
                     </tbody>
                   </table>
                 </div>
-
                 <Show when={reservations()?.pagination}>
-                  <Pagination
-                    currentPage={currentPage()}
-                    totalPages={reservations().pagination.totalPages}
-                    onPageChange={(p) => setCurrentPage(p)}
-                  />
+                  <Pagination currentPage={currentPage()} totalPages={reservations().pagination.totalPages} onPageChange={(p) => setCurrentPage(p)} />
                 </Show>
               </Show>
             </Show>
@@ -654,85 +632,45 @@ function Reservations() {
           <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-2xl shadow-xl max-h-[90vh] flex flex-col">
               <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                  Detalle de Reserva
-                </h2>
-                <button
-                  onClick={() => setShowDetail(false)}
-                  class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  ✕
-                </button>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Detalle de Reserva</h2>
+                <button onClick={() => setShowDetail(false)} class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
               </div>
-
               <div class="flex-1 overflow-y-auto p-6">
-                <Show
-                  when={!detailLoading()}
-                  fallback={
-                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                      Cargando...
-                    </div>
-                  }
-                >
+                <Show when={!detailLoading()} fallback={<div class="text-center py-8 text-gray-500 dark:text-gray-400">Cargando...</div>}>
                   <Show when={detailReservation()}>
                     {(res) => {
                       const r = res();
                       const statusInfo = getStatusInfo(r.status);
                       return (
                         <div class="space-y-6">
-                          {/* Header info */}
                           <div class="flex items-center justify-between">
                             <div>
-                              <p class="text-xl font-mono font-bold text-gray-900 dark:text-white">
-                                {r.reservationCode}
-                              </p>
-                              <span class={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                                {statusInfo.label}
-                              </span>
+                              <p class="text-xl font-mono font-bold text-gray-900 dark:text-white">{r.reservationCode}</p>
+                              <span class={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
                             </div>
                             <div class="text-right">
-                              <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                                {formatPrice(r.totalAmount)}
-                              </p>
-                              <p class={`text-sm font-medium ${paymentStatusColor(r.paymentStatus)}`}>
-                                {paymentStatusLabel(r.paymentStatus)}
-                              </p>
+                              <p class="text-2xl font-bold text-gray-900 dark:text-white">{formatPrice(r.totalAmount)}</p>
+                              <p class={`text-sm font-medium ${paymentStatusColor(r.paymentStatus)}`}>{paymentStatusLabel(r.paymentStatus)}</p>
                             </div>
                           </div>
-
-                          {/* Cliente */}
                           <div class="card">
                             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Cliente</p>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">{r.client?.name}</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">{r.client?.email}</p>
-                            <Show when={r.client?.phone}>
-                              <p class="text-sm text-gray-500 dark:text-gray-400">{r.client.phone}</p>
-                            </Show>
+                            <Show when={r.client?.phone}><p class="text-sm text-gray-500 dark:text-gray-400">{r.client.phone}</p></Show>
                           </div>
-
-                          {/* Habitación */}
                           <div class="card">
                             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Habitación</p>
                             <div class="flex items-center gap-3">
                               <Show when={r.room?.images?.length > 0}>
-                                <img
-                                  src={`${BACKEND_URL}${r.room.images[0]}`}
-                                  alt=""
-                                  class="w-16 h-16 rounded-lg object-cover"
-                                />
+                                <img src={`${BACKEND_URL}${r.room.images[0]}`} alt="" class="w-16 h-16 rounded-lg object-cover" />
                               </Show>
                               <div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                  #{r.room?.roomNumber} — {r.room?.type}
-                                </p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                  Piso {r.room?.floor || "—"}
-                                </p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">#{r.room?.roomNumber} — {r.room?.type}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Piso {r.room?.floor || "—"}</p>
                               </div>
                             </div>
                           </div>
-
-                          {/* Fechas */}
                           <div class="grid grid-cols-3 gap-4">
                             <div class="card text-center">
                               <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-In</p>
@@ -744,47 +682,26 @@ function Reservations() {
                             </div>
                             <div class="card text-center">
                               <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Noches</p>
-                              <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                {calculateNights(r.checkIn, r.checkOut)}
-                              </p>
+                              <p class="text-sm font-medium text-gray-900 dark:text-white">{calculateNights(r.checkIn, r.checkOut)}</p>
                             </div>
                           </div>
-
-                          {/* Detalles adicionales */}
                           <div class="card">
                             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Detalles</p>
                             <div class="grid grid-cols-2 gap-2 text-sm">
                               <p class="text-gray-500 dark:text-gray-400">Huéspedes:</p>
                               <p class="text-gray-900 dark:text-white">{r.numberOfGuests}</p>
-                              <Show when={r.pricePerNight}>
-                                <p class="text-gray-500 dark:text-gray-400">Precio/noche:</p>
-                                <p class="text-gray-900 dark:text-white">{formatPrice(r.pricePerNight)}</p>
-                              </Show>
-                              <Show when={r.specialRequests}>
-                                <p class="text-gray-500 dark:text-gray-400">Solicitudes:</p>
-                                <p class="text-gray-900 dark:text-white">{r.specialRequests}</p>
-                              </Show>
-                              <Show when={r.createdBy}>
-                                <p class="text-gray-500 dark:text-gray-400">Creada por:</p>
-                                <p class="text-gray-900 dark:text-white">{r.createdBy?.name}</p>
-                              </Show>
+                              <Show when={r.pricePerNight}><p class="text-gray-500 dark:text-gray-400">Precio/noche:</p><p class="text-gray-900 dark:text-white">{formatPrice(r.pricePerNight)}</p></Show>
+                              <Show when={r.specialRequests}><p class="text-gray-500 dark:text-gray-400">Solicitudes:</p><p class="text-gray-900 dark:text-white">{r.specialRequests}</p></Show>
+                              <Show when={r.createdBy}><p class="text-gray-500 dark:text-gray-400">Creada por:</p><p class="text-gray-900 dark:text-white">{r.createdBy?.name}</p></Show>
                             </div>
                           </div>
-
-                          {/* Cancelación info */}
                           <Show when={r.status === "cancelada"}>
                             <div class="card border-l-4 border-l-red-500">
                               <p class="text-xs font-semibold text-red-600 dark:text-red-400 uppercase mb-2">Cancelación</p>
                               <p class="text-sm text-gray-700 dark:text-gray-300">{r.cancellationReason || "Sin motivo"}</p>
-                              <Show when={r.cancellationFee > 0}>
-                                <p class="text-sm font-medium text-red-600 dark:text-red-400 mt-1">
-                                  Penalización: {formatPrice(r.cancellationFee)}
-                                </p>
-                              </Show>
+                              <Show when={r.cancellationFee > 0}><p class="text-sm font-medium text-red-600 dark:text-red-400 mt-1">Penalización: {formatPrice(r.cancellationFee)}</p></Show>
                             </div>
                           </Show>
-
-                          {/* Pagos asociados */}
                           <Show when={reservationPayments().length > 0}>
                             <div>
                               <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Pagos</p>
@@ -793,27 +710,13 @@ function Reservations() {
                                   {(payment) => (
                                     <div class="card flex items-center justify-between">
                                       <div>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                          {formatPrice(payment.amount)}
-                                          <span class="text-xs text-gray-500 ml-2">
-                                            {PAYMENT_METHODS.find((m) => m.value === payment.paymentMethod)?.label || payment.paymentMethod}
-                                          </span>
-                                        </p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                                          {payment.receiptNumber} — {formatDate(payment.paymentDate)}
-                                        </p>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{formatPrice(payment.amount)} <span class="text-xs text-gray-500 ml-2">{PAYMENT_METHODS.find((m) => m.value === payment.paymentMethod)?.label || payment.paymentMethod}</span></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{payment.receiptNumber} — {formatDate(payment.paymentDate)}</p>
                                       </div>
                                       <div class="flex items-center gap-2">
-                                        <span class={`text-xs font-medium ${payment.status === "completado" ? "text-green-600 dark:text-green-400" : payment.status === "reembolsado" ? "text-red-600 dark:text-red-400" : "text-gray-500"}`}>
-                                          {payment.status}
-                                        </span>
+                                        <span class={`text-xs font-medium ${payment.status === "completado" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{payment.status}</span>
                                         <Show when={payment.status === "completado"}>
-                                          <button
-                                            onClick={() => downloadReceipt(payment._id)}
-                                            class="text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 transition-colors"
-                                          >
-                                            PDF
-                                          </button>
+                                          <button onClick={() => downloadReceipt(payment._id)} class="text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 transition-colors">PDF</button>
                                         </Show>
                                       </div>
                                     </div>
@@ -822,28 +725,18 @@ function Reservations() {
                               </div>
                             </div>
                           </Show>
-
-                          {/* Acciones del detalle */}
                           <div class="flex gap-2 flex-wrap pt-2">
                             <Show when={r.paymentStatus === "pendiente" && r.status !== "cancelada" && auth.hasPermission("payments.create")}>
-                              <button onClick={() => { setShowDetail(false); openPaymentModal(r); }} class="btn-primary">
-                                Registrar Pago
-                              </button>
+                              <button onClick={() => { setShowDetail(false); openPaymentModal(r); }} class="btn-primary">Registrar Pago</button>
                             </Show>
                             <Show when={r.status === "confirmada" && r.paymentStatus === "pagado" && auth.hasPermission("reservations.checkin")}>
-                              <button onClick={() => handleCheckIn(r)} class="btn-primary">
-                                Check-in
-                              </button>
+                              <button onClick={() => handleCheckIn(r)} class="btn-primary">Check-in</button>
                             </Show>
                             <Show when={r.status === "check-in" && auth.hasPermission("reservations.checkout")}>
-                              <button onClick={() => handleCheckOut(r)} class="btn-primary">
-                                Check-out
-                              </button>
+                              <button onClick={() => handleCheckOut(r)} class="btn-primary">Check-out</button>
                             </Show>
-                            <Show when={!["cancelada", "check-out"].includes(r.status) && auth.hasPermission("reservations.update")}>
-                              <button onClick={() => { setShowDetail(false); openCancelModal(r); }} class="btn-secondary text-red-600 dark:text-red-400">
-                                Cancelar Reserva
-                              </button>
+                            <Show when={!["cancelada", "check-out", "check-in"].includes(r.status) && auth.hasPermission("reservations.update")}>
+                              <button onClick={() => { setShowDetail(false); openCancelModal(r); }} class="btn-secondary text-red-600 dark:text-red-400">Cancelar Reserva</button>
                             </Show>
                           </div>
                         </div>
@@ -852,11 +745,8 @@ function Reservations() {
                   </Show>
                 </Show>
               </div>
-
               <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
-                <button onClick={() => setShowDetail(false)} class="btn-secondary w-full">
-                  Cerrar
-                </button>
+                <button onClick={() => setShowDetail(false)} class="btn-secondary w-full">Cerrar</button>
               </div>
             </div>
           </div>
@@ -868,93 +758,45 @@ function Reservations() {
         <Show when={showCreateModal()}>
           <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-3xl shadow-xl max-h-[90vh] flex flex-col">
-              {/* Header con pasos */}
               <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
                 <div class="flex justify-between items-center mb-3">
-                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    Nueva Reserva
-                  </h2>
-                  <button
-                    onClick={() => setShowCreateModal(false)}
-                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                  >
-                    ✕
-                  </button>
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Nueva Reserva</h2>
+                  <button onClick={() => setShowCreateModal(false)} class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
                 </div>
-                {/* Step indicators */}
                 <div class="flex gap-2">
                   <For each={[
-                    { n: 1, label: "Fechas" },
-                    { n: 2, label: "Habitación" },
-                    ...(auth.hasPermission("reservations.create_others") ? [{ n: 3, label: "Cliente" }] : []),
-                    { n: auth.hasPermission("reservations.create_others") ? 4 : 3, label: "Confirmar" },
+                    { n: 1 }, { n: 2 },
+                    ...(auth.hasPermission("reservations.create_others") ? [{ n: 3 }] : []),
+                    { n: auth.hasPermission("reservations.create_others") ? 4 : 3 },
                   ]}>
-                    {(step) => (
-                      <div class={`flex-1 h-1.5 rounded-full transition-colors ${createStep() >= step.n
-                        ? "bg-blue-500"
-                        : "bg-gray-200 dark:bg-gray-700"
-                        }`} />
-                    )}
+                    {(step) => (<div class={`flex-1 h-1.5 rounded-full transition-colors ${createStep() >= step.n ? "bg-blue-500" : "bg-gray-200 dark:bg-gray-700"}`} />)}
                   </For>
                 </div>
               </div>
 
-              {/* Body */}
               <div class="flex-1 overflow-y-auto p-6">
-                {/* STEP 1: Fechas y búsqueda */}
+                {/* STEP 1: Fechas */}
                 <Show when={createStep() === 1}>
                   <div class="space-y-4">
-                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Selecciona las fechas y busca disponibilidad
-                    </p>
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Selecciona las fechas y busca disponibilidad</p>
                     <div class="grid grid-cols-2 gap-4">
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Fecha de entrada
-                        </label>
-                        <input
-                          type="date"
-                          class="input-field w-full"
-                          min={todayStr()}
-                          value={searchCheckIn()}
-                          onInput={(e) => setSearchCheckIn(e.target.value)}
-                        />
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de entrada</label>
+                        <input type="date" class="input-field w-full" min={todayStr()} value={searchCheckIn()} onInput={(e) => setSearchCheckIn(e.target.value)} />
                       </div>
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Fecha de salida
-                        </label>
-                        <input
-                          type="date"
-                          class="input-field w-full"
-                          min={searchCheckIn() || todayStr()}
-                          value={searchCheckOut()}
-                          onInput={(e) => setSearchCheckOut(e.target.value)}
-                        />
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de salida</label>
+                        <input type="date" class="input-field w-full" min={searchCheckIn() || todayStr()} value={searchCheckOut()} onInput={(e) => setSearchCheckOut(e.target.value)} />
                       </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Huéspedes
-                        </label>
-                        <input
-                          type="number"
-                          class="input-field w-full"
-                          min="1"
-                          value={searchGuests()}
-                          onInput={(e) => setSearchGuests(parseInt(e.target.value) || 1)}
-                        />
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Huéspedes</label>
+                        <input type="number" class="input-field w-full" min="1" value={searchGuests()} onInput={(e) => setSearchGuests(parseInt(e.target.value) || 1)} />
                       </div>
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Tipo (opcional)
-                        </label>
-                        <select
-                          class="input-field w-full"
-                          value={searchType()}
-                          onChange={(e) => setSearchType(e.target.value)}
-                        >
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo (opcional)</label>
+                        <select class="input-field w-full" value={searchType()} onChange={(e) => setSearchType(e.target.value)}>
                           <option value="">Todos los tipos</option>
                           <option value="Simple">Simple</option>
                           <option value="Doble">Doble</option>
@@ -964,26 +806,12 @@ function Reservations() {
                         </select>
                       </div>
                     </div>
-                    <button
-                      onClick={searchAvailability}
-                      disabled={searchingRooms()}
-                      class="btn-primary w-full disabled:opacity-50"
-                    >
+                    <button onClick={searchAvailability} disabled={searchingRooms()} class="btn-primary w-full disabled:opacity-50">
                       {searchingRooms() ? "Buscando..." : "🔍 Buscar disponibilidad"}
                     </button>
-
-                    {/* Resultados */}
                     <Show when={availableRooms().length > 0}>
-                      <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
-                        {availableRooms().length} habitación(es) disponible(s).
-                        Selecciona una para continuar:
-                      </p>
-                      <button
-                        onClick={() => setCreateStep(2)}
-                        class="btn-primary w-full mt-2"
-                      >
-                        Ver habitaciones disponibles →
-                      </button>
+                      <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">{availableRooms().length} habitación(es) disponible(s).</p>
+                      <button onClick={() => setCreateStep(2)} class="btn-primary w-full mt-2">Ver habitaciones disponibles →</button>
                     </Show>
                   </div>
                 </Show>
@@ -992,81 +820,39 @@ function Reservations() {
                 <Show when={createStep() === 2}>
                   <div class="space-y-4">
                     <div class="flex items-center justify-between">
-                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Selecciona una habitación
-                      </p>
-                      <button
-                        onClick={() => setCreateStep(1)}
-                        class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        ← Cambiar fechas
-                      </button>
+                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Selecciona una habitación</p>
+                      <button onClick={() => setCreateStep(1)} class="text-xs text-blue-600 dark:text-blue-400 hover:underline">← Cambiar fechas</button>
                     </div>
-
                     <div class="space-y-3">
                       <For each={availableRooms()}>
                         {(room) => (
-                          <div
-                            class="card cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
-                            onClick={() => selectRoom(room)}
-                          >
+                          <div class="card cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all" onClick={() => selectRoom(room)}>
                             <div class="flex items-center gap-4">
                               <Show when={room.images?.length > 0}>
-                                <img
-                                  src={`${BACKEND_URL}${room.images[0]}`}
-                                  alt=""
-                                  class="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                                />
+                                <img src={`${BACKEND_URL}${room.images[0]}`} alt="" class="w-20 h-20 rounded-lg object-cover flex-shrink-0" />
                               </Show>
                               <div class="flex-1">
                                 <div class="flex items-center gap-2 mb-1">
-                                  <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                    #{room.roomNumber} — {room.type}
-                                  </p>
-                                  <span class="text-xs text-gray-500 dark:text-gray-400">
-                                    Piso {room.floor || "—"} • {room.capacity} persona(s)
-                                  </span>
+                                  <p class="text-sm font-medium text-gray-900 dark:text-white">#{room.roomNumber} — {room.type}</p>
+                                  <span class="text-xs text-gray-500 dark:text-gray-400">Piso {room.floor || "—"} • {room.capacity} persona(s)</span>
                                 </div>
                                 <Show when={room.amenities?.length > 0}>
                                   <div class="flex flex-wrap gap-1 mb-2">
-                                    <For each={room.amenities.slice(0, 5)}>
-                                      {(a) => (
-                                        <span class="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded">
-                                          {a}
-                                        </span>
-                                      )}
-                                    </For>
+                                    <For each={room.amenities.slice(0, 5)}>{(a) => (<span class="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded">{a}</span>)}</For>
                                   </div>
                                 </Show>
                                 <div class="flex items-center gap-3">
-                                  <Show
-                                    when={room.adjustedPrice && room.adjustedPrice !== room.basePrice}
-                                    fallback={
-                                      <p class="text-lg font-bold text-gray-900 dark:text-white">
-                                        {formatPrice(room.basePrice)}
-                                        <span class="text-xs font-normal text-gray-500"> /noche</span>
-                                      </p>
-                                    }
-                                  >
-                                    <p class="text-lg font-bold text-gray-900 dark:text-white">
-                                      {formatPrice(room.adjustedPrice)}
-                                      <span class="text-xs font-normal text-gray-500"> /noche</span>
-                                    </p>
-                                    <span class="text-xs line-through text-gray-400">
-                                      {formatPrice(room.basePrice)}
-                                    </span>
+                                  <Show when={room.adjustedPrice && room.adjustedPrice !== room.basePrice} fallback={<p class="text-lg font-bold text-gray-900 dark:text-white">{formatPrice(room.basePrice)}<span class="text-xs font-normal text-gray-500"> /noche</span></p>}>
+                                    <p class="text-lg font-bold text-gray-900 dark:text-white">{formatPrice(room.adjustedPrice)}<span class="text-xs font-normal text-gray-500"> /noche</span></p>
+                                    <span class="text-xs line-through text-gray-400">{formatPrice(room.basePrice)}</span>
                                     <Show when={room.season?.name || (typeof room.season === "string" && room.season)}>
-                                      <span class="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded">
-                                        {room.season?.name || room.season}
-                                      </span>
+                                      <span class="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded">{room.season?.name || room.season}</span>
                                     </Show>
                                   </Show>
                                 </div>
                               </div>
                               <div class="flex-shrink-0">
-                                <span class="text-xs px-3 py-1.5 rounded-md bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
-                                  Seleccionar →
-                                </span>
+                                <span class="text-xs px-3 py-1.5 rounded-md bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">Seleccionar →</span>
                               </div>
                             </div>
                           </div>
@@ -1076,85 +862,112 @@ function Reservations() {
                   </div>
                 </Show>
 
-                {/* STEP 3: Datos del cliente (solo staff) */}
-                <Show when={createStep() === 3}>
+                {/* STEP 3: Cliente (staff) — BUSCADOR CON AUTOCOMPLETADO */}
+                <Show when={createStep() === 3 && auth.hasPermission("reservations.create_others")}>
                   <div class="space-y-4">
                     <div class="flex items-center justify-between">
-                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Datos del cliente
-                      </p>
-                      <button
-                        onClick={() => setCreateStep(2)}
-                        class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        ← Cambiar habitación
-                      </button>
+                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Asignar cliente</p>
+                      <button onClick={() => setCreateStep(2)} class="text-xs text-blue-600 dark:text-blue-400 hover:underline">← Cambiar habitación</button>
                     </div>
 
+                    {/* Buscador de clientes */}
                     <div class="card">
                       <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                        Si el cliente ya tiene cuenta, solo ingresa su email.
-                        Si no existe, se creará automáticamente.
+                        Busca al cliente por nombre, email, DUI o teléfono. Si no existe, regístralo.
                       </p>
-                      <div class="space-y-3">
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Email del cliente *
-                          </label>
-                          <input
-                            type="email"
-                            class="input-field w-full"
-                            placeholder="cliente@email.com"
-                            value={clientEmail()}
-                            onInput={(e) => setClientEmail(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Nombre del cliente
-                          </label>
+
+                      {/* Campo de búsqueda */}
+                      <Show when={!selectedClient()}>
+                        <div class="relative">
+                          <div class="absolute left-3 top-1/2 -translate-y-1/2">
+                            <Show when={clientSearching()} fallback={
+                              <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                            }>
+                              <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            </Show>
+                          </div>
                           <input
                             type="text"
-                            class="input-field w-full"
-                            placeholder="Nombre completo (si es nuevo)"
-                            value={clientName()}
-                            onInput={(e) => setClientName(e.target.value)}
+                            class="input-field w-full pl-10"
+                            placeholder="Buscar cliente por nombre, email o DUI..."
+                            value={clientSearchQuery()}
+                            onInput={(e) => handleClientSearch(e.target.value)}
+                            onFocus={() => clientSearchResults().length > 0 && setShowClientDropdown(true)}
                           />
                         </div>
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Teléfono
-                          </label>
-                          <input
-                            type="tel"
-                            class="input-field w-full"
-                            placeholder="Opcional"
-                            value={clientPhone()}
-                            onInput={(e) => setClientPhone(e.target.value)}
-                          />
+
+                        {/* Dropdown de resultados */}
+                        <Show when={showClientDropdown() && clientSearchResults().length > 0}>
+                          <div class="mt-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                            <For each={clientSearchResults()}>
+                              {(client) => (
+                                <button
+                                  onClick={() => selectClient(client)}
+                                  class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+                                >
+                                  <p class="text-sm font-medium text-gray-900 dark:text-white">{client.name}</p>
+                                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    {client.email}
+                                    <Show when={client.documentNumber}>
+                                      <span> • {client.documentType}: {client.documentNumber}</span>
+                                    </Show>
+                                  </p>
+                                </button>
+                              )}
+                            </For>
+                          </div>
+                        </Show>
+
+                        {/* Sin resultados */}
+                        <Show when={showClientDropdown() && clientSearchResults().length === 0 && clientSearchQuery().length >= 2 && !clientSearching()}>
+                          <div class="mt-1 p-4 border border-gray-200 dark:border-gray-700 rounded-lg text-center">
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">No se encontraron clientes</p>
+                          </div>
+                        </Show>
+
+                        {/* Botón registrar nuevo */}
+                        <button
+                          onClick={openRegisterClient}
+                          class="mt-3 w-full py-2.5 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 dark:hover:border-blue-500 dark:hover:text-blue-400 transition-colors"
+                        >
+                          + Registrar Cliente Nuevo
+                        </button>
+                      </Show>
+
+                      {/* Cliente seleccionado */}
+                      <Show when={selectedClient()}>
+                        <div class="flex items-center justify-between p-4 bg-green-50 dark:bg-green-500/10 rounded-lg border border-green-200 dark:border-green-500/20">
+                          <div>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{selectedClient().name}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{selectedClient().email}</p>
+                            <Show when={selectedClient().documentNumber}>
+                              <p class="text-xs text-gray-500 dark:text-gray-400">{selectedClient().documentType}: {selectedClient().documentNumber}</p>
+                            </Show>
+                            <Show when={selectedClient().phone}>
+                              <p class="text-xs text-gray-500 dark:text-gray-400">Tel: {selectedClient().phone}</p>
+                            </Show>
+                          </div>
+                          <button onClick={clearSelectedClient} class="text-xs px-3 py-1.5 rounded-md border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                            Cambiar
+                          </button>
                         </div>
-                      </div>
+                      </Show>
                     </div>
 
+                    {/* Solicitudes especiales */}
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Solicitudes especiales
-                      </label>
-                      <textarea
-                        class="input-field w-full"
-                        rows="2"
-                        placeholder="Cama extra, vista al mar, etc."
-                        value={specialRequests()}
-                        onInput={(e) => setSpecialRequests(e.target.value)}
-                      />
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solicitudes especiales</label>
+                      <textarea class="input-field w-full" rows="2" placeholder="Cama extra, vista al mar, etc." value={specialRequests()} onInput={(e) => setSpecialRequests(e.target.value)} />
                     </div>
 
                     <button
                       onClick={() => setCreateStep(4)}
-                      disabled={auth.hasPermission("reservations.create_others") && !clientEmail()}
+                      disabled={!selectedClient()}
                       class="btn-primary w-full disabled:opacity-50"
                     >
-                      Continuar →
+                      {selectedClient() ? "Continuar →" : "Selecciona un cliente para continuar"}
                     </button>
                   </div>
                 </Show>
@@ -1162,88 +975,48 @@ function Reservations() {
                 {/* STEP 4 (o 3 para clientes): Confirmar */}
                 <Show when={createStep() === 4 || (createStep() === 3 && !auth.hasPermission("reservations.create_others"))}>
                   <div class="space-y-4">
-                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Confirma los datos de la reserva
-                    </p>
-
-                    {/* Para clientes: solicitudes especiales */}
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Confirma los datos de la reserva</p>
                     <Show when={!auth.hasPermission("reservations.create_others")}>
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Solicitudes especiales (opcional)
-                        </label>
-                        <textarea
-                          class="input-field w-full"
-                          rows="2"
-                          placeholder="Cama extra, vista al mar, etc."
-                          value={specialRequests()}
-                          onInput={(e) => setSpecialRequests(e.target.value)}
-                        />
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solicitudes especiales (opcional)</label>
+                        <textarea class="input-field w-full" rows="2" placeholder="Cama extra, vista al mar, etc." value={specialRequests()} onInput={(e) => setSpecialRequests(e.target.value)} />
                       </div>
                     </Show>
-
                     <div class="card space-y-3">
                       <div class="grid grid-cols-2 gap-2 text-sm">
                         <p class="text-gray-500 dark:text-gray-400">Habitación:</p>
-                        <p class="text-gray-900 dark:text-white font-medium">
-                          #{selectedRoom()?.roomNumber} — {selectedRoom()?.type}
-                        </p>
-
+                        <p class="text-gray-900 dark:text-white font-medium">#{selectedRoom()?.roomNumber} — {selectedRoom()?.type}</p>
                         <p class="text-gray-500 dark:text-gray-400">Check-In:</p>
                         <p class="text-gray-900 dark:text-white">{formatDate(searchCheckIn())}</p>
-
                         <p class="text-gray-500 dark:text-gray-400">Check-Out:</p>
                         <p class="text-gray-900 dark:text-white">{formatDate(searchCheckOut())}</p>
-
                         <p class="text-gray-500 dark:text-gray-400">Noches:</p>
-                        <p class="text-gray-900 dark:text-white">
-                          {calculateNights(searchCheckIn(), searchCheckOut())}
-                        </p>
-
+                        <p class="text-gray-900 dark:text-white">{calculateNights(searchCheckIn(), searchCheckOut())}</p>
                         <p class="text-gray-500 dark:text-gray-400">Huéspedes:</p>
                         <p class="text-gray-900 dark:text-white">{searchGuests()}</p>
-
                         <p class="text-gray-500 dark:text-gray-400">Precio/noche:</p>
-                        <p class="text-gray-900 dark:text-white">
-                          {formatPrice(selectedRoom()?.adjustedPrice || selectedRoom()?.basePrice)}
-                        </p>
-
-                        <Show when={clientEmail()}>
+                        <p class="text-gray-900 dark:text-white">{formatPrice(selectedRoom()?.adjustedPrice || selectedRoom()?.basePrice)}</p>
+                        <Show when={selectedClient()}>
                           <p class="text-gray-500 dark:text-gray-400">Cliente:</p>
-                          <p class="text-gray-900 dark:text-white">{clientEmail()}</p>
+                          <p class="text-gray-900 dark:text-white">{selectedClient().name} ({selectedClient().email})</p>
                         </Show>
-
                         <Show when={specialRequests()}>
                           <p class="text-gray-500 dark:text-gray-400">Solicitudes:</p>
                           <p class="text-gray-900 dark:text-white">{specialRequests()}</p>
                         </Show>
                       </div>
-
                       <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
                         <div class="flex justify-between items-center">
                           <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Total estimado:</p>
                           <p class="text-xl font-bold text-gray-900 dark:text-white">
-                            {formatPrice(
-                              calculateNights(searchCheckIn(), searchCheckOut()) *
-                              (selectedRoom()?.adjustedPrice || selectedRoom()?.basePrice || 0)
-                            )}
+                            {formatPrice(calculateNights(searchCheckIn(), searchCheckOut()) * (selectedRoom()?.adjustedPrice || selectedRoom()?.basePrice || 0))}
                           </p>
                         </div>
                       </div>
                     </div>
-
                     <div class="flex gap-3">
-                      <button
-                        onClick={() => setCreateStep(auth.hasPermission("reservations.create_others") ? 3 : 2)}
-                        class="btn-secondary flex-1"
-                      >
-                        ← Atrás
-                      </button>
-                      <button
-                        onClick={confirmReservation}
-                        disabled={createLoading()}
-                        class="btn-primary flex-1 disabled:opacity-50"
-                      >
+                      <button onClick={() => setCreateStep(auth.hasPermission("reservations.create_others") ? 3 : 2)} class="btn-secondary flex-1">← Atrás</button>
+                      <button onClick={confirmReservation} disabled={createLoading()} class="btn-primary flex-1 disabled:opacity-50">
                         {createLoading() ? "Creando..." : "Confirmar Reserva"}
                       </button>
                     </div>
@@ -1255,98 +1028,102 @@ function Reservations() {
         </Show>
 
         {/* ============================================ */}
+        {/* MODAL: REGISTRAR CLIENTE NUEVO */}
+        {/* ============================================ */}
+        <Show when={showRegisterClient()}>
+          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-lg shadow-xl max-h-[90vh] flex flex-col">
+              <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Registrar Cliente Nuevo</h2>
+                <button onClick={() => setShowRegisterClient(false)} class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+              </div>
+              <form onSubmit={submitRegisterClient} class="flex-1 overflow-y-auto p-6 space-y-4">
+                <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg p-3">
+                  <p class="text-xs text-blue-700 dark:text-blue-400">
+                    Se generará una contraseña temporal y se enviará por email al cliente para que pueda acceder al sistema.
+                  </p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre completo *</label>
+                  <input type="text" required class="input-field w-full" placeholder="Nombre del cliente" value={regName()} onInput={(e) => setRegName(e.target.value)} />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
+                  <input type="email" required class="input-field w-full" placeholder="email@ejemplo.com" value={regEmail()} onInput={(e) => setRegEmail(e.target.value)} />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono *</label>
+                  <input type="text" required class="input-field w-full" placeholder="+503 7777-8888" value={regPhone()} onInput={(e) => setRegPhone(e.target.value)} />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de documento *</label>
+                    <select class="input-field w-full" value={regDocType()} onChange={(e) => setRegDocType(e.target.value)} required>
+                      <For each={DOCUMENT_TYPES}>{(d) => <option value={d.value}>{d.label}</option>}</For>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Número de documento *</label>
+                    <input type="text" required class="input-field w-full" placeholder="00000000-0" value={regDocNumber()} onInput={(e) => setRegDocNumber(e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección (opcional)</label>
+                  <input type="text" class="input-field w-full" placeholder="Dirección del cliente" value={regAddress()} onInput={(e) => setRegAddress(e.target.value)} />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">País</label>
+                  <input type="text" class="input-field w-full" value={regCountry()} onInput={(e) => setRegCountry(e.target.value)} />
+                </div>
+                <Show when={registerError()}>
+                  <div class="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-md text-sm">{registerError()}</div>
+                </Show>
+                <div class="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setShowRegisterClient(false)} class="btn-secondary flex-1">Cancelar</button>
+                  <button type="submit" disabled={registerLoading()} class="btn-primary flex-1 disabled:opacity-50">
+                    {registerLoading() ? "Registrando..." : "Registrar Cliente"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </Show>
+
+        {/* ============================================ */}
         {/* MODAL: PAGO */}
         {/* ============================================ */}
         <Show when={showPaymentModal()}>
           <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-md shadow-xl">
               <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                  Registrar Pago
-                </h2>
-                <button
-                  onClick={() => setShowPaymentModal(false)}
-                  class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  ✕
-                </button>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Registrar Pago</h2>
+                <button onClick={() => setShowPaymentModal(false)} class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
               </div>
-
               <div class="p-6 space-y-4">
-                {/* Info de la reserva */}
                 <div class="card">
-                  <p class="text-sm font-mono text-gray-900 dark:text-white">
-                    {paymentReservation()?.reservationCode}
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    #{paymentReservation()?.room?.roomNumber} — {paymentReservation()?.room?.type}
-                  </p>
-                  <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">
-                    {formatPrice(paymentReservation()?.totalAmount)}
-                  </p>
+                  <p class="text-sm font-mono text-gray-900 dark:text-white">{paymentReservation()?.reservationCode}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">#{paymentReservation()?.room?.roomNumber} — {paymentReservation()?.room?.type}</p>
+                  <p class="text-xl font-bold text-gray-900 dark:text-white mt-2">{formatPrice(paymentReservation()?.totalAmount)}</p>
                 </div>
-
-                {/* Método de pago */}
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Método de pago
-                  </label>
-                  <select
-                    class="input-field w-full"
-                    value={paymentMethod()}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  >
-                    <For each={PAYMENT_METHODS}>
-                      {(m) => <option value={m.value}>{m.label}</option>}
-                    </For>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Método de pago</label>
+                  <select class="input-field w-full" value={paymentMethod()} onChange={(e) => setPaymentMethod(e.target.value)}>
+                    <For each={PAYMENT_METHODS}>{(m) => <option value={m.value}>{m.label}</option>}</For>
                   </select>
                 </div>
-
-                {/* Tipo de comprobante */}
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tipo de comprobante
-                  </label>
-                  <select
-                    class="input-field w-full"
-                    value={receiptType()}
-                    onChange={(e) => setReceiptType(e.target.value)}
-                  >
-                    <For each={RECEIPT_TYPES}>
-                      {(r) => <option value={r.value}>{r.label}</option>}
-                    </For>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
+                  <select class="input-field w-full" value={receiptType()} onChange={(e) => setReceiptType(e.target.value)}>
+                    <For each={RECEIPT_TYPES}>{(r) => <option value={r.value}>{r.label}</option>}</For>
                   </select>
                 </div>
-
-                {/* Notas */}
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Notas (opcional)
-                  </label>
-                  <textarea
-                    class="input-field w-full"
-                    rows="2"
-                    placeholder="Notas del pago..."
-                    value={paymentNotes()}
-                    onInput={(e) => setPaymentNotes(e.target.value)}
-                  />
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas (opcional)</label>
+                  <textarea class="input-field w-full" rows="2" placeholder="Notas del pago..." value={paymentNotes()} onInput={(e) => setPaymentNotes(e.target.value)} />
                 </div>
-
-                {/* Botones */}
                 <div class="flex gap-3 pt-2">
-                  <button
-                    onClick={() => setShowPaymentModal(false)}
-                    class="btn-secondary flex-1"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={submitPayment}
-                    disabled={paymentLoading()}
-                    class="btn-primary flex-1 disabled:opacity-50"
-                  >
-                    {paymentLoading() ? "Procesando..." : "Confirmar Pago"}
-                  </button>
+                  <button onClick={() => setShowPaymentModal(false)} class="btn-secondary flex-1">Cancelar</button>
+                  <button onClick={submitPayment} disabled={paymentLoading()} class="btn-primary flex-1 disabled:opacity-50">{paymentLoading() ? "Procesando..." : "Confirmar Pago"}</button>
                 </div>
               </div>
             </div>
@@ -1360,57 +1137,23 @@ function Reservations() {
           <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-md shadow-xl">
               <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-                <h2 class="text-lg font-semibold text-red-600 dark:text-red-400">
-                  Cancelar Reserva
-                </h2>
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  ✕
-                </button>
+                <h2 class="text-lg font-semibold text-red-600 dark:text-red-400">Cancelar Reserva</h2>
+                <button onClick={() => setShowCancelModal(false)} class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
               </div>
-
               <div class="p-6 space-y-4">
                 <div class="bg-red-500/10 border border-red-500/30 rounded-md p-4">
-                  <p class="text-sm text-red-600 dark:text-red-400">
-                    Estás a punto de cancelar la reserva
-                    <strong> {cancelReservation()?.reservationCode}</strong>.
-                    Esta acción puede generar una penalización según la política de cancelación.
-                  </p>
+                  <p class="text-sm text-red-600 dark:text-red-400">Estás a punto de cancelar la reserva <strong>{cancelReservation()?.reservationCode}</strong>.</p>
                   <Show when={cancelReservation()?.paymentStatus === "pagado"}>
-                    <p class="text-sm text-red-600 dark:text-red-400 mt-2">
-                      Esta reserva ya fue pagada. Se procesará un reembolso automático
-                      descontando la penalización correspondiente.
-                    </p>
+                    <p class="text-sm text-red-600 dark:text-red-400 mt-2">Esta reserva ya fue pagada. Se procesará un reembolso automático.</p>
                   </Show>
                 </div>
-
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Motivo de cancelación
-                  </label>
-                  <textarea
-                    class="input-field w-full"
-                    rows="3"
-                    placeholder="Indica el motivo..."
-                    value={cancelReason()}
-                    onInput={(e) => setCancelReason(e.target.value)}
-                  />
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Motivo de cancelación</label>
+                  <textarea class="input-field w-full" rows="3" placeholder="Indica el motivo..." value={cancelReason()} onInput={(e) => setCancelReason(e.target.value)} />
                 </div>
-
                 <div class="flex gap-3 pt-2">
-                  <button
-                    onClick={() => setShowCancelModal(false)}
-                    class="btn-secondary flex-1"
-                  >
-                    No, mantener
-                  </button>
-                  <button
-                    onClick={submitCancel}
-                    disabled={cancelLoading()}
-                    class="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
-                  >
+                  <button onClick={() => setShowCancelModal(false)} class="btn-secondary flex-1">No, mantener</button>
+                  <button onClick={submitCancel} disabled={cancelLoading()} class="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors">
                     {cancelLoading() ? "Cancelando..." : "Sí, cancelar reserva"}
                   </button>
                 </div>

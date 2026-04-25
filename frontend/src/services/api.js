@@ -606,6 +606,10 @@ class ApiService {
       body: JSON.stringify({ reason }),
     });
   }
+
+  async searchClients(query) {
+    return this.request(`/users/clients/search?q=${encodeURIComponent(query)}`);
+  }
 }
 
 export const api = new ApiService();
