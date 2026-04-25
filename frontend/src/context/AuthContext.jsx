@@ -50,9 +50,9 @@ export function AuthProvider(props) {
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (name, email, password, extraData = {}) => {
     try {
-      const data = await api.register(name, email, password);
+      const data = await api.register(name, email, password, "cliente", extraData);
       setUser(data.newUser);
       return { success: true, user: data.newUser };
     } catch (error) {

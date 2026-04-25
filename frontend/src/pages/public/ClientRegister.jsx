@@ -4,11 +4,21 @@ import { useNavigate, useSearchParams, A } from "@solidjs/router";
 import { showToast } from "../../utils/toast";
 import PublicLayout from "../../components/public/PublicLayout";
 
+const DOCUMENT_TYPES = [
+    { value: "DUI", label: "DUI" },
+    { value: "DNI", label: "DNI" },
+    { value: "Passport", label: "Pasaporte" },
+    { value: "DriverLicense", label: "Licencia de Conducir" },
+];
+
 function ClientRegister() {
     const [name, setName] = createSignal("");
     const [email, setEmail] = createSignal("");
     const [password, setPassword] = createSignal("");
     const [confirmPassword, setConfirmPassword] = createSignal("");
+    const [phone, setPhone] = createSignal("");
+    const [documentType, setDocumentType] = createSignal("DUI");
+    const [documentNumber, setDocumentNumber] = createSignal("");
     const [error, setError] = createSignal("");
     const [loading, setLoading] = createSignal(false);
 
@@ -32,12 +42,18 @@ function ClientRegister() {
 
         setLoading(true);
 
-        const result = await auth.register(name(), email(), password());
+        const extraData = {};
+        if (phone()) extraData.phone = phone();
+        if (documentNumber()) {
+            extraData.documentType = documentType();
+            extraData.documentNumber = documentNumber();
+        }
+
+        const result = await auth.register(name(), email(), password(), extraData);
 
         if (result.success) {
             showToast.success("¡Cuenta creada exitosamente!");
 
-            // Auto-login después del registro
             const loginResult = await auth.login(email(), password());
 
             if (loginResult.success) {
@@ -48,7 +64,6 @@ function ClientRegister() {
                     navigate("/");
                 }
             } else {
-                // Si el auto-login falla, enviar al login del cliente
                 navigate(`/client-login${searchParams.returnUrl ? `?returnUrl=${encodeURIComponent(searchParams.returnUrl)}` : ""}`);
             }
         } else {
@@ -146,6 +161,60 @@ function ClientRegister() {
                                 />
                             </div>
 
+                            {/* Separador campos opcionales */}
+                            <div class="border-t border-gray-100 pt-4">
+                                <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+                                    Información adicional <span class="normal-case font-normal">(opcional)</span>
+                                </p>
+                                <p class="text-xs text-[#c9a84c] mb-4">
+                                    Completa tu documento si deseas emitir Crédito Fiscal en tus pagos.
+                                </p>
+
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
+                                            Teléfono
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-[#c9a84c] transition-colors"
+                                            placeholder="+503 7000-0000"
+                                            value={phone()}
+                                            onInput={(e) => setPhone(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
+                                                Tipo doc.
+                                            </label>
+                                            <select
+                                                class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-[#c9a84c] transition-colors"
+                                                value={documentType()}
+                                                onChange={(e) => setDocumentType(e.target.value)}
+                                            >
+                                                {DOCUMENT_TYPES.map((dt) => (
+                                                    <option value={dt.value}>{dt.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
+                                                Número
+                                            </label>
+                                            <input
+                                                type="text"
+                                                class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-[#c9a84c] transition-colors"
+                                                placeholder="00000000-0"
+                                                value={documentNumber()}
+                                                onInput={(e) => setDocumentNumber(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {error() && (
                                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                                     {error()}
@@ -174,7 +243,6 @@ function ClientRegister() {
                         </div>
                     </div>
 
-                    {/* Link al registro de admin */}
                     <div class="mt-6 text-center">
                         <A
                             href="/login"

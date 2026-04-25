@@ -349,7 +349,7 @@ export class userController {
       const { id } = req.params;
 
       //obtenemos los nuevos campos del body
-      const { name, email, password, role } = req.body;
+      const { name, email, password, role, phone, documentType, documentNumber, address, country } = req.body;
 
       //validamos si es un id valido de mongodb
       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -383,6 +383,11 @@ export class userController {
 
       if (name) rightData.name = name;
       if (email) rightData.email = email;
+      if (phone !== undefined) rightData.phone = phone;
+      if (documentType !== undefined) rightData.documentType = documentType;
+      if (documentNumber !== undefined) rightData.documentNumber = documentNumber;
+      if (address !== undefined) rightData.address = address;
+      if (country !== undefined) rightData.country = country;
 
       // validar y hashear la contraseña nueva
       if (password) {
@@ -516,6 +521,12 @@ export class userController {
           isActive: user.isActive,
           lastLogin: user.lastLogin,
           createdAt: user.createdAt,
+          phone: user.phone,
+          documentType: user.documentType,
+          documentNumber: user.documentNumber,
+          address: user.address,
+          country: user.country,
+          mustChangePassword: user.mustChangePassword,
         },
       });
     } catch (error) {

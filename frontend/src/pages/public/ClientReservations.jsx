@@ -86,12 +86,13 @@ function ClientReservations() {
     const [paymentNotes, setPaymentNotes] = createSignal("");
     const [paymentLoading, setPaymentLoading] = createSignal(false);
 
-    const openPayment = (reservation) => {
+    const openPayment = async (reservation) => {
         setPaymentReservation(reservation);
         setPaymentMethod("tarjeta");
         setReceiptType("consumidor_final");
         setPaymentNotes("");
         setShowPayment(true);
+        await auth.refreshUser();
     };
 
     const submitPayment = async () => {
@@ -591,7 +592,7 @@ function ClientReservations() {
                                 </select>
                             </div>
 
-                            <Show when={receiptType() === "credito_fiscal" && !paymentReservation()?.client?.documentNumber}>
+                            <Show when={receiptType() === "credito_fiscal" && !auth.user()?.documentNumber}>
                                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                     <p class="text-xs text-yellow-700">
                                         ⚠️ No tienes DUI/documento registrado en tu perfil. Contacta al personal del hotel para actualizar tus datos antes de emitir Crédito Fiscal.
@@ -613,7 +614,7 @@ function ClientReservations() {
                                     Cancelar
                                 </button>
                                 <button
-                                    onClick={submitPayment} disabled={paymentLoading() || (receiptType() === "credito_fiscal" && !paymentReservation()?.client?.documentNumber)}
+                                    onClick={submitPayment} disabled={paymentLoading() || (receiptType() === "credito_fiscal" && !auth.user()?.documentNumber)}
                                     class="flex-1 py-3 bg-[#c9a84c] hover:bg-[#b8963f] text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                                 >
                                     {paymentLoading() ? "Procesando..." : "Confirmar Pago"}

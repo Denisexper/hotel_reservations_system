@@ -340,12 +340,18 @@ function Reservations() {
   const [paymentNotes, setPaymentNotes] = createSignal("");
   const [paymentLoading, setPaymentLoading] = createSignal(false);
 
-  const openPaymentModal = (reservation) => {
-    setPaymentReservation(reservation);
+  const openPaymentModal = async (reservation) => {
     setPaymentMethod("efectivo");
     setReceiptType("consumidor_final");
     setPaymentNotes("");
     setShowPaymentModal(true);
+    try {
+      const fresh = await api.getReservation(reservation._id);
+      setPaymentReservation(fresh.data || fresh);
+    } catch (err) {
+      console.error("Error fetching reservation:", err);
+      setPaymentReservation(reservation);
+    }
   };
 
   const submitPayment = async () => {

@@ -7,6 +7,13 @@ import { useNavigate } from "@solidjs/router";
 import { showToast } from "../utils/toast";
 import Pagination from "../components/Pagination";
 
+const DOCUMENT_TYPES = [
+  { value: "DUI", label: "DUI" },
+  { value: "DNI", label: "DNI" },
+  { value: "Passport", label: "Pasaporte" },
+  { value: "DriverLicense", label: "Licencia de Conducir" },
+];
+
 function Users() {
   const auth = useAuth();
   const navigate = useNavigate();
@@ -65,6 +72,16 @@ function Users() {
   const [formEmail, setFormEmail] = createSignal("");
   const [formPassword, setFormPassword] = createSignal("");
   const [formRole, setFormRole] = createSignal(""); // Ahora guardará el roleId
+  const [formPhone, setFormPhone] = createSignal("");
+  const [formDocType, setFormDocType] = createSignal("DUI");
+  const [formDocNumber, setFormDocNumber] = createSignal("");
+  const [formAddress, setFormAddress] = createSignal("");
+  const [formCountry, setFormCountry] = createSignal("El Salvador");
+
+  const isClienteRole = () => {
+    const role = roles()?.data?.find((r) => r._id === formRole());
+    return role?.name === "cliente";
+  };
 
   const [showHistoryModal, setShowHistoryModal] = createSignal(false);
   const [selectedUser, setSelectedUser] = createSignal(null);
@@ -117,9 +134,13 @@ function Users() {
     setFormName("");
     setFormEmail("");
     setFormPassword("");
-    // uscar el rol "user" por defecto
     const defaultRole = roles()?.data?.find((r) => r.name === "user");
     setFormRole(defaultRole?._id || "");
+    setFormPhone("");
+    setFormDocType("DUI");
+    setFormDocNumber("");
+    setFormAddress("");
+    setFormCountry("El Salvador");
     setModalError("");
     setShowModal(true);
   };
@@ -129,8 +150,12 @@ function Users() {
     setFormName(user.name);
     setFormEmail(user.email);
     setFormPassword("");
-    // Establecer el roleId del usuario
     setFormRole(user.role?._id || user.role);
+    setFormPhone(user.phone || "");
+    setFormDocType(user.documentType || "DUI");
+    setFormDocNumber(user.documentNumber || "");
+    setFormAddress(user.address || "");
+    setFormCountry(user.country || "El Salvador");
     setModalError("");
     setShowModal(true);
   };
@@ -174,16 +199,27 @@ function Users() {
         if (formName()) data.name = formName();
         if (formEmail()) data.email = formEmail();
         if (formPassword()) data.password = formPassword();
-        if (formRole()) data.role = formRole(); // role id
+        if (formRole()) data.role = formRole();
+        if (formPhone()) data.phone = formPhone();
+        if (formDocType()) data.documentType = formDocType();
+        if (formDocNumber()) data.documentNumber = formDocNumber();
+        if (formAddress()) data.address = formAddress();
+        if (formCountry()) data.country = formCountry();
         await api.updateUser(editingUser()._id, data);
         showToast.success("Usuario actualizado correctamente");
       } else {
-        await api.createUser({
+        const data = {
           name: formName(),
           email: formEmail(),
-          password: formPassword(),
-          role: formRole(), // role id
-        });
+          role: formRole(),
+        };
+        if (formPassword()) data.password = formPassword();
+        if (formPhone()) data.phone = formPhone();
+        if (formDocType()) data.documentType = formDocType();
+        if (formDocNumber()) data.documentNumber = formDocNumber();
+        if (formAddress()) data.address = formAddress();
+        if (formCountry()) data.country = formCountry();
+        await api.createUser(data);
         showToast.success("Usuario creado correctamente");
       }
       setShowModal(false);
@@ -443,8 +479,8 @@ function Users() {
         <Show when={showModal()}>
           <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div
-              class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 
-                        rounded-xl w-full max-w-md shadow-xl"
+              class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800
+                        rounded-xl w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
             >
               <div
                 class="flex justify-between items-center px-6 py-4 border-b 
@@ -490,26 +526,6 @@ function Users() {
                   />
                 </div>
 
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {editingUser()
-                      ? "Nueva contraseña (opcional)"
-                      : "Contraseña"}
-                  </label>
-                  <input
-                    type="password"
-                    required={!editingUser()}
-                    class="input-field w-full"
-                    placeholder={
-                      editingUser()
-                        ? "Dejar vacío para no cambiar"
-                        : "Mínimo 6 caracteres"
-                    }
-                    value={formPassword()}
-                    onInput={(e) => setFormPassword(e.target.value)}
-                  />
-                </div>
-
                 {/* Dropdown de roles dinámico */}
                 <div>
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -538,6 +554,121 @@ function Users() {
                       </For>
                     </select>
                   </Show>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {editingUser()
+                      ? "Nueva contraseña (opcional)"
+                      : isClienteRole()
+                        ? "Contraseña (opcional)"
+                        : "Contraseña"}
+                  </label>
+                  <input
+                    type="password"
+                    required={!editingUser() && !isClienteRole()}
+                    class="input-field w-full"
+                    placeholder={
+                      editingUser()
+                        ? "Dejar vacío para no cambiar"
+                        : isClienteRole()
+                          ? "Dejar vacío para generar contraseña temporal"
+                          : "Mínimo 6 caracteres"
+                    }
+                    value={formPassword()}
+                    onInput={(e) => setFormPassword(e.target.value)}
+                  />
+                  <Show when={!editingUser() && isClienteRole() && !formPassword()}>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      Se generará una contraseña temporal y se enviará por email al cliente.
+                    </p>
+                  </Show>
+                </div>
+
+                {/* Separador campos adicionales */}
+                <div class="border-t border-gray-200 dark:border-gray-800 pt-4">
+                  <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                    Información de contacto
+                  </p>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Teléfono
+                      </label>
+                      <input
+                        type="text"
+                        class="input-field w-full"
+                        placeholder="+503 7000-0000"
+                        value={formPhone()}
+                        onInput={(e) => setFormPhone(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        País
+                      </label>
+                      <input
+                        type="text"
+                        class="input-field w-full"
+                        placeholder="El Salvador"
+                        value={formCountry()}
+                        onInput={(e) => setFormCountry(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                    Documento de identidad
+                    <Show when={isClienteRole()}>
+                      <span class="text-red-500 ml-1">*</span>
+                    </Show>
+                  </p>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Tipo
+                      </label>
+                      <select
+                        class="input-field w-full"
+                        value={formDocType()}
+                        onChange={(e) => setFormDocType(e.target.value)}
+                      >
+                        <For each={DOCUMENT_TYPES}>
+                          {(dt) => <option value={dt.value}>{dt.label}</option>}
+                        </For>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Número
+                        <Show when={isClienteRole()}>
+                          <span class="text-red-500 ml-1">*</span>
+                        </Show>
+                      </label>
+                      <input
+                        type="text"
+                        class="input-field w-full"
+                        placeholder="00000000-0"
+                        value={formDocNumber()}
+                        onInput={(e) => setFormDocNumber(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Dirección
+                  </label>
+                  <input
+                    type="text"
+                    class="input-field w-full"
+                    placeholder="Dirección completa (opcional)"
+                    value={formAddress()}
+                    onInput={(e) => setFormAddress(e.target.value)}
+                  />
                 </div>
 
                 <Show when={modalError()}>
