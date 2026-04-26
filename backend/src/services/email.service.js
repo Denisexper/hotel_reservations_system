@@ -246,7 +246,11 @@ export const sendRefundEmail = async ({ to, clientName, payment, reservation }) 
 
 // Email de recordatorio antes del check-in
 export const sendCheckInReminder = async ({ to, clientName, reservation }) => {
-    const daysUntil = Math.ceil((new Date(reservation.checkIn) - new Date()) / (1000 * 60 * 60 * 24));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkInDate = new Date(reservation.checkIn);
+    checkInDate.setHours(0, 0, 0, 0);
+    const daysUntil = Math.round((checkInDate - today) / (1000 * 60 * 60 * 24));
 
     const content = `
         <h2>⏰ Recordatorio de tu Reserva</h2>
