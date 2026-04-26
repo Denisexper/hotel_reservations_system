@@ -300,12 +300,6 @@ function SearchRooms() {
                                                                     <span class="text-2xl font-semibold text-[#1a1a2e]">{formatPrice(room.adjustedPrice)}</span>
                                                                     <span class="text-xs text-gray-400"> /noche</span>
                                                                 </p>
-                                                                <p class="flex items-center gap-2 mt-0.5">
-                                                                    <span class="text-xs line-through text-gray-400">{formatPrice(room.basePrice)}</span>
-                                                                    <Show when={room.season?.modifierType === "porcentaje"}>
-                                                                        <span class="text-xs text-[#c9a84c] font-medium">+{room.season.modifierValue}%</span>
-                                                                    </Show>
-                                                                </p>
                                                             </Show>
                                                             <Show when={calculateNights() > 0}>
                                                                 <p class="text-xs text-gray-400 mt-1" style={{ "font-family": "'Montserrat', sans-serif" }}>

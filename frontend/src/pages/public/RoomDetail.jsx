@@ -328,14 +328,6 @@ function RoomDetail() {
                                                             </span>
                                                             <span class="text-sm text-gray-400"> /noche</span>
                                                         </p>
-                                                        <div class="flex items-center gap-2 mt-1">
-                                                            <span class="text-sm line-through text-gray-400">{formatPrice(seasonalInfo().basePrice)}</span>
-                                                            <Show when={seasonalInfo().season}>
-                                                                <span class="text-xs px-2 py-0.5 bg-[#c9a84c]/10 text-[#c9a84c] rounded-md font-medium">
-                                                                    {seasonalInfo().season.name}
-                                                                </span>
-                                                            </Show>
-                                                        </div>
                                                     </Show>
                                                 </div>
 

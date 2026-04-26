@@ -1,4 +1,4 @@
-import { createSignal, createResource, Show, For } from "solid-js";
+import { createSignal, createResource, createEffect, Show, For } from "solid-js";
 import { api } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "@solidjs/router";
@@ -32,11 +32,12 @@ function ClientReservations() {
     const auth = useAuth();
     const navigate = useNavigate();
 
-    // Redirigir si no está logueado
-    if (!auth.isAuthenticated()) {
-        navigate("/client-login");
-        return null;
-    }
+    // Redirigir si no está logueado (espera a que termine de verificar el token)
+    createEffect(() => {
+        if (!auth.loading() && !auth.isAuthenticated()) {
+            navigate("/client-login");
+        }
+    });
 
     const [currentPage, setCurrentPage] = createSignal(1);
     const [statusFilter, setStatusFilter] = createSignal("");
