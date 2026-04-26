@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { email_user, email_pass } from './Enviroments.service.js';
+import { email_user, email_pass, frontend_url } from './Enviroments.service.js';
 
 // Configurar transporter de Gmail
 const transporter = nodemailer.createTransport({
@@ -349,11 +349,13 @@ export const sendDayPassConfirmation = async ({ to, visitorName, dayPass }) => {
 
 // Email de bienvenida con credenciales temporales
 export const sendWelcomeEmail = async ({ to, clientName, tempPassword }) => {
+    const loginUrl = `${frontend_url}/login`;
+
     const content = `
         <h2>👋 ¡Bienvenido a Hotel Reservations!</h2>
         <p>Hola <strong>${clientName}</strong>,</p>
         <p>Se ha creado tu cuenta en nuestro sistema de reservas. Aquí están tus credenciales de acceso:</p>
-        
+
         <div class="info-box">
             <div class="info-row">
                 <span class="info-label">Email:</span>
@@ -364,9 +366,17 @@ export const sendWelcomeEmail = async ({ to, clientName, tempPassword }) => {
                 <span class="info-value" style="font-family: monospace; font-size: 16px; color: #4361ee;">${tempPassword}</span>
             </div>
         </div>
-        
-        <p><span class="badge badge-warning">Te recomendamos cambiar tu contraseña al iniciar sesión por primera vez.</span></p>
-        
+
+        <p><span class="badge badge-warning">⚠️ Debes cambiar tu contraseña al iniciar sesión por primera vez.</span></p>
+
+        <div style="text-align: center; margin: 25px 0;">
+            <a href="${loginUrl}" style="background: #4361ee; color: #ffffff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">
+                Iniciar Sesión
+            </a>
+        </div>
+
+        <p style="color: #666; font-size: 13px; text-align: center;">O copia y pega este enlace en tu navegador:<br><a href="${loginUrl}" style="color: #4361ee;">${loginUrl}</a></p>
+
         <p style="color: #666; font-size: 14px;">Con tu cuenta podrás ver tus reservas, descargar comprobantes y gestionar tu información personal.</p>
     `;
 

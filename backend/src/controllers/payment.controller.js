@@ -275,7 +275,6 @@ export class PaymentController {
                 return res.status(404).json({ msj: "Pago no encontrado" });
             }
 
-            // Verificar que el usuario puede ver este comprobante
             const userId = req.user.id;
             const userRole = req.user.role;
             const isOwner = payment.reservation.client._id.toString() === userId;
@@ -286,9 +285,8 @@ export class PaymentController {
             }
 
             const PDFDocument = (await import('pdfkit')).default;
-            const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+            const doc = new PDFDocument({ size: 'LETTER', margin: 0, bufferPages: true });
 
-            // Headers de respuesta
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename=comprobante-${payment.receiptNumber}.pdf`);
             doc.pipe(res);
@@ -297,170 +295,192 @@ export class PaymentController {
             const client = reservation.client;
             const room = reservation.room;
             const isCredito = payment.receiptType === 'credito_fiscal';
-
-            // === HEADER ===
-            doc.fontSize(20).font('Helvetica-Bold').text('Hotel Reservations', { align: 'center' });
-            doc.fontSize(10).font('Helvetica').text('Sistema de Reservas', { align: 'center' });
-            doc.moveDown(0.5);
-
-            // Tipo de comprobante
-            doc.fontSize(14).font('Helvetica-Bold')
-                .text(isCredito ? 'CRÉDITO FISCAL' : 'COMPROBANTE CONSUMIDOR FINAL', { align: 'center' });
-            doc.moveDown(0.3);
-            doc.fontSize(10).font('Helvetica')
-                .text(`Nº: ${payment.receiptNumber}`, { align: 'center' });
-            doc.moveDown(1);
-
-            // Línea separadora
-            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
-            doc.moveDown(1);
-
-            // === DATOS DEL COMPROBANTE ===
-            const leftCol = 50;
-            const rightCol = 300;
-            let y = doc.y;
-
-            doc.fontSize(10).font('Helvetica-Bold').text('Fecha de emisión:', leftCol, y);
-            doc.font('Helvetica').text(new Date(payment.paymentDate).toLocaleDateString('es-ES', {
-                year: 'numeric', month: 'long', day: 'numeric'
-            }), rightCol, y);
-
-            y += 18;
-            doc.font('Helvetica-Bold').text('Transacción:', leftCol, y);
-            doc.font('Helvetica').text(payment.transactionId, rightCol, y);
-
-            y += 18;
-            doc.font('Helvetica-Bold').text('Método de pago:', leftCol, y);
-            const methodLabels = { efectivo: 'Efectivo', tarjeta: 'Tarjeta de Crédito/Débito', transferencia: 'Transferencia Bancaria' };
-            doc.font('Helvetica').text(methodLabels[payment.paymentMethod] || payment.paymentMethod, rightCol, y);
-
-            doc.moveDown(2);
-            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
-            doc.moveDown(1);
-
-            // === DATOS DEL CLIENTE ===
-            doc.fontSize(12).font('Helvetica-Bold').text('Datos del Cliente');
-            doc.moveDown(0.5);
-            y = doc.y;
-
-            doc.fontSize(10).font('Helvetica-Bold').text('Nombre:', leftCol, y);
-            doc.font('Helvetica').text(client.name, rightCol, y);
-
-            y += 18;
-            doc.font('Helvetica-Bold').text('Email:', leftCol, y);
-            doc.font('Helvetica').text(client.email, rightCol, y);
-
-            if (client.phone) {
-                y += 18;
-                doc.font('Helvetica-Bold').text('Teléfono:', leftCol, y);
-                doc.font('Helvetica').text(client.phone, rightCol, y);
-            }
-
-            if (client.documentType && client.documentNumber) {
-                y += 18;
-                doc.font('Helvetica-Bold').text('Documento:', leftCol, y);
-                doc.font('Helvetica').text(`${client.documentType}: ${client.documentNumber}`, rightCol, y);
-            }
-
-            if (client.address) {
-                y += 18;
-                doc.font('Helvetica-Bold').text('Dirección:', leftCol, y);
-                doc.font('Helvetica').text(client.address, rightCol, y);
-            }
-
-            doc.moveDown(2);
-            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
-            doc.moveDown(1);
-
-            // === DETALLE DE LA RESERVA ===
-            doc.fontSize(12).font('Helvetica-Bold').text('Detalle de la Reserva');
-            doc.moveDown(0.5);
-            y = doc.y;
-
-            doc.fontSize(10).font('Helvetica-Bold').text('Código de reserva:', leftCol, y);
-            doc.font('Helvetica').text(reservation.reservationCode, rightCol, y);
-
-            y += 18;
-            doc.font('Helvetica-Bold').text('Habitación:', leftCol, y);
-            doc.font('Helvetica').text(`${room.roomNumber} - ${room.type}`, rightCol, y);
-
-            y += 18;
-            doc.font('Helvetica-Bold').text('Check-In:', leftCol, y);
-            doc.font('Helvetica').text(new Date(reservation.checkIn).toLocaleDateString('es-ES'), rightCol, y);
-
-            y += 18;
-            doc.font('Helvetica-Bold').text('Check-Out:', leftCol, y);
-            doc.font('Helvetica').text(new Date(reservation.checkOut).toLocaleDateString('es-ES'), rightCol, y);
-
             const nights = Math.ceil((new Date(reservation.checkOut) - new Date(reservation.checkIn)) / (1000 * 60 * 60 * 24));
-            y += 18;
-            doc.font('Helvetica-Bold').text('Noches:', leftCol, y);
-            doc.font('Helvetica').text(`${nights}`, rightCol, y);
+            const methodLabels = { efectivo: 'Efectivo', tarjeta: 'Tarjeta de Crédito/Débito', transferencia: 'Transferencia Bancaria' };
 
-            doc.moveDown(2);
-            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
-            doc.moveDown(1);
+            // Colores
+            const NAVY    = '#1a1a2e';
+            const BLUE    = '#4361ee';
+            const LIGHT   = '#f0f2ff';
+            const GRAY_BG = '#f8f9fa';
+            const BORDER  = '#dde2f0';
+            const TEXT    = '#1e1e2e';
+            const MUTED   = '#6b7280';
+            const WHITE   = '#ffffff';
 
-            // === DETALLE DE PAGO ===
-            doc.fontSize(12).font('Helvetica-Bold').text('Detalle de Pago');
-            doc.moveDown(0.5);
+            // Dimensiones
+            const PAGE_W = 612;
+            const ML = 40;
+            const MR = 40;
+            const CW = PAGE_W - ML - MR;  // 532
 
-            // Tabla simple
-            const tableTop = doc.y;
+            // ── HEADER (fondo navy) ──────────────────────────────────────
+            doc.rect(0, 0, PAGE_W, 110).fill(NAVY);
+
+            // Nombre del hotel
+            doc.fillColor(WHITE).fontSize(22).font('Helvetica-Bold')
+                .text('Hotel Reservations', ML, 22, { width: CW * 0.6 });
+            doc.fillColor('#a5b4fc').fontSize(10).font('Helvetica')
+                .text('Sistema de Reservas · Comprobante oficial', ML, 48);
+
+            // Badge tipo de comprobante (derecha)
+            const badgeText = isCredito ? 'CRÉDITO FISCAL' : 'CONSUMIDOR FINAL';
+            doc.roundedRect(PAGE_W - MR - 140, 20, 140, 30, 4).fill(BLUE);
+            doc.fillColor(WHITE).fontSize(9).font('Helvetica-Bold')
+                .text(badgeText, PAGE_W - MR - 140, 30, { width: 140, align: 'center' });
+
+            // Número de comprobante
+            doc.fillColor('#c7d2fe').fontSize(9).font('Helvetica')
+                .text(`Nº ${payment.receiptNumber}`, PAGE_W - MR - 140, 56, { width: 140, align: 'center' });
+
+            // Fecha (abajo del header, también en header)
+            doc.fillColor('#94a3b8').fontSize(8).font('Helvetica')
+                .text(
+                    `Emitido: ${new Date(payment.paymentDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+                    ML, 88
+                );
+
+            // ── FRANJA DE TRANSACCIÓN ───────────────────────────────────
+            doc.rect(0, 110, PAGE_W, 36).fill(LIGHT);
+            doc.fillColor(BLUE).fontSize(8).font('Helvetica-Bold')
+                .text('TRANSACCIÓN', ML, 120);
+            doc.fillColor(TEXT).font('Helvetica')
+                .text(payment.transactionId, ML + 80, 120);
+
+            doc.fillColor(BLUE).font('Helvetica-Bold')
+                .text('MÉTODO DE PAGO', 260, 120);
+            doc.fillColor(TEXT).font('Helvetica')
+                .text(methodLabels[payment.paymentMethod] || payment.paymentMethod, 370, 120);
+
+            doc.fillColor(BLUE).font('Helvetica-Bold')
+                .text('ESTADO', 490, 120);
+            doc.fillColor('#16a34a').font('Helvetica-Bold')
+                .text(payment.status.toUpperCase(), 528, 120);
+
+            // ── SECCIÓN: DATOS DEL CLIENTE ───────────────────────────────
+            let y = 162;
+
+            doc.rect(ML, y, CW, 14).fill(BLUE);
+            doc.fillColor(WHITE).fontSize(8).font('Helvetica-Bold')
+                .text('DATOS DEL CLIENTE', ML + 8, y + 3);
+            y += 14;
+
+            // Construir filas de cliente
+            const clientRows = [
+                ['Nombre',   client.name],
+                ['Email',    client.email],
+                ...(client.phone ? [['Teléfono', client.phone]] : []),
+                ...(client.documentType && client.documentNumber
+                    ? [['Documento', `${client.documentType}: ${client.documentNumber}`]]
+                    : []),
+                ...(client.address ? [['Dirección', client.address]] : []),
+            ];
+
+            clientRows.forEach(([ label, value ], i) => {
+                const rowBg = i % 2 === 0 ? WHITE : GRAY_BG;
+                doc.rect(ML, y, CW, 18).fill(rowBg);
+                doc.fillColor(MUTED).fontSize(8.5).font('Helvetica-Bold')
+                    .text(label, ML + 8, y + 5, { width: 90 });
+                doc.fillColor(TEXT).font('Helvetica')
+                    .text(value, ML + 105, y + 5, { width: CW - 115 });
+                y += 18;
+            });
+
+            // ── SECCIÓN: DETALLE DE RESERVA ──────────────────────────────
+            y += 12;
+            doc.rect(ML, y, CW, 14).fill(NAVY);
+            doc.fillColor(WHITE).fontSize(8).font('Helvetica-Bold')
+                .text('DETALLE DE LA RESERVA', ML + 8, y + 3);
+            y += 14;
+
+            const reservationRows = [
+                ['Código de reserva', reservation.reservationCode],
+                ['Habitación',        `${room.roomNumber} — ${room.type}`],
+                ['Check-In',          new Date(reservation.checkIn).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
+                ['Check-Out',         new Date(reservation.checkOut).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
+                ['Noches',            `${nights} noche${nights !== 1 ? 's' : ''}`],
+                ['Huéspedes',         `${reservation.numberOfGuests || 1}`],
+            ];
+
+            reservationRows.forEach(([ label, value ], i) => {
+                const rowBg = i % 2 === 0 ? WHITE : GRAY_BG;
+                doc.rect(ML, y, CW, 18).fill(rowBg);
+                doc.fillColor(MUTED).fontSize(8.5).font('Helvetica-Bold')
+                    .text(label, ML + 8, y + 5, { width: 120 });
+                doc.fillColor(TEXT).font('Helvetica')
+                    .text(value, ML + 135, y + 5, { width: CW - 145 });
+                y += 18;
+            });
+
+            // ── TABLA DE ITEMS ───────────────────────────────────────────
+            y += 12;
+            doc.rect(ML, y, CW, 14).fill(NAVY);
+            doc.fillColor(WHITE).fontSize(8).font('Helvetica-Bold');
+            doc.text('DESCRIPCIÓN',    ML + 8,  y + 3, { width: 240 });
+            doc.text('NOCHES',         ML + 280, y + 3, { width: 60, align: 'center' });
+            doc.text('PRECIO/NOCHE',   ML + 350, y + 3, { width: 80, align: 'right' });
+            doc.text('TOTAL',          ML + 440, y + 3, { width: 88, align: 'right' });
+            y += 14;
+
             const pricePerNight = payment.amount / nights;
+            doc.rect(ML, y, CW, 22).fill(LIGHT);
+            doc.fillColor(TEXT).fontSize(9).font('Helvetica')
+                .text(`Habitación ${room.roomNumber} (${room.type})`, ML + 8, y + 7, { width: 240 });
+            doc.font('Helvetica-Bold')
+                .text(`${nights}`, ML + 280, y + 7, { width: 60, align: 'center' });
+            doc.font('Helvetica')
+                .text(`$${pricePerNight.toFixed(2)}`, ML + 350, y + 7, { width: 80, align: 'right' });
+            doc.fillColor(NAVY).font('Helvetica-Bold')
+                .text(`$${payment.amount.toFixed(2)}`, ML + 440, y + 7, { width: 88, align: 'right' });
+            y += 22;
 
-            // Header de tabla
-            doc.fontSize(9).font('Helvetica-Bold');
-            doc.text('Descripción', leftCol, tableTop);
-            doc.text('Noches', 300, tableTop);
-            doc.text('Precio/Noche', 370, tableTop);
-            doc.text('Subtotal', 480, tableTop, { align: 'right', width: 80 });
+            // ── TOTALES ──────────────────────────────────────────────────
+            y += 8;
+            const totalsX = ML + 290;
+            const totalsW = CW - 290;
 
-            doc.moveTo(50, tableTop + 15).lineTo(562, tableTop + 15).stroke('#eeeeee');
-
-            // Fila de detalle
-            const rowY = tableTop + 22;
-            doc.font('Helvetica');
-            doc.text(`Habitación ${room.roomNumber} (${room.type})`, leftCol, rowY);
-            doc.text(`${nights}`, 300, rowY);
-            doc.text(`$${pricePerNight.toFixed(2)}`, 370, rowY);
-            doc.text(`$${payment.amount.toFixed(2)}`, 480, rowY, { align: 'right', width: 80 });
-
-            doc.moveDown(3);
-            doc.moveTo(350, doc.y).lineTo(562, doc.y).stroke('#cccccc');
-            doc.moveDown(0.5);
-
-            // Totales
             if (isCredito) {
                 const subtotal = payment.amount / 1.13;
-                const iva = payment.amount - subtotal;
+                const iva      = payment.amount - subtotal;
 
-                y = doc.y;
-                doc.fontSize(10).font('Helvetica-Bold').text('Subtotal:', 370, y);
-                doc.font('Helvetica').text(`$${subtotal.toFixed(2)}`, 480, y, { align: 'right', width: 80 });
+                // Subtotal
+                doc.rect(totalsX, y, totalsW, 20).fill(GRAY_BG);
+                doc.fillColor(MUTED).fontSize(9).font('Helvetica')
+                    .text('Subtotal (sin IVA)', totalsX + 8, y + 6, { width: totalsW - 80 });
+                doc.fillColor(TEXT)
+                    .text(`$${subtotal.toFixed(2)}`, totalsX + 8, y + 6, { width: totalsW - 10, align: 'right' });
+                y += 20;
 
-                y += 18;
-                doc.font('Helvetica-Bold').text('IVA (13%):', 370, y);
-                doc.font('Helvetica').text(`$${iva.toFixed(2)}`, 480, y, { align: 'right', width: 80 });
-
-                y += 18;
-                doc.moveTo(350, y).lineTo(562, y).stroke('#cccccc');
-                y += 8;
+                // IVA
+                doc.rect(totalsX, y, totalsW, 20).fill(WHITE);
+                doc.rect(totalsX, y, totalsW, 20).stroke(BORDER);
+                doc.fillColor(MUTED).fontSize(9).font('Helvetica')
+                    .text('IVA (13%)', totalsX + 8, y + 6, { width: totalsW - 80 });
+                doc.fillColor(TEXT)
+                    .text(`$${iva.toFixed(2)}`, totalsX + 8, y + 6, { width: totalsW - 10, align: 'right' });
+                y += 20;
             }
 
-            y = doc.y + (isCredito ? 0 : 5);
-            doc.fontSize(14).font('Helvetica-Bold').text('TOTAL:', 370, y);
-            doc.text(`$${payment.amount.toFixed(2)}`, 480, y, { align: 'right', width: 80 });
+            // Total final
+            doc.rect(totalsX, y, totalsW, 28).fill(NAVY);
+            doc.fillColor(WHITE).fontSize(10).font('Helvetica-Bold')
+                .text('TOTAL', totalsX + 8, y + 9, { width: totalsW - 80 });
+            doc.fontSize(12)
+                .text(`$${payment.amount.toFixed(2)}`, totalsX + 8, y + 8, { width: totalsW - 10, align: 'right' });
+            y += 28;
 
-            // === FOOTER ===
-            doc.moveDown(4);
-            doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke('#cccccc');
-            doc.moveDown(1);
+            // ── FOOTER ───────────────────────────────────────────────────
+            y += 20;
+            doc.rect(0, y, PAGE_W, 1).fill(BORDER);
+            y += 10;
 
-            doc.fontSize(8).font('Helvetica').fillColor('#999999');
-            doc.text('Este documento es un comprobante de pago generado electrónicamente.', { align: 'center' });
-            doc.text(`Procesado por: ${payment.processedBy.name} (${payment.processedBy.email})`, { align: 'center' });
-            doc.text(`Estado del pago: ${payment.status.toUpperCase()}`, { align: 'center' });
+            doc.fillColor(MUTED).fontSize(7.5).font('Helvetica')
+                .text('Documento generado electrónicamente — no requiere firma física.', ML, y, { width: CW, align: 'center' });
+            y += 12;
+            doc.text(
+                `Procesado por: ${payment.processedBy.name}  ·  ${new Date(payment.paymentDate).toLocaleString('es-ES')}`,
+                ML, y, { width: CW, align: 'center' }
+            );
 
             doc.end();
         } catch (error) {

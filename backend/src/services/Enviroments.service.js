@@ -10,3 +10,4 @@ export const jwt_secret = process.env.JWT_SECRET
 export const jwt_expires = process.env.JWT_EXPIRES_IN
 export const email_user = process.env.EMAIL_USER
 export const email_pass = process.env.EMAIL_PASS
+export const frontend_url = process.env.FRONTEND_URL || 'http://localhost:3001'
