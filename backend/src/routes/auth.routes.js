@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { userController } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
-import { loginLimiter } from "../middleware/rateLimit.middleware.js";
+import { loginLimiter, registerLimiter } from "../middleware/rateLimit.middleware.js";
 
 const router = Router();
 const controller = new userController();
@@ -10,7 +10,7 @@ const controller = new userController();
 
 // rutas publicas
 router.post('/login', loginLimiter, controller.login);
-router.post('/register', controller.register);
+router.post('/register', registerLimiter, controller.register);
 
 // logout solo necesita estar logeado 
 router.post('/logout', authMiddleware, controller.logout);

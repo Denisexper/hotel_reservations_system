@@ -17,3 +17,12 @@ export const loginLimiter = rateLimit({
     legacyHeaders: false,
     message: { msj: "Demasiados intentos de inicio de sesión, intenta de nuevo en un minuto" }
 });
+
+// Límite para registro: 5 cuentas por hora por IP
+export const registerLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { msj: "Demasiados registros desde esta IP, intenta de nuevo en una hora" }
+});
