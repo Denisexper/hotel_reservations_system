@@ -6,6 +6,8 @@ import cors from "cors";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { startReminderCron } from "./services/reminder.cron.js";
 import { startNoShowCron } from "./services/noshow.cron.js";
+import { generalLimiter } from "./middleware/rateLimit.middleware.js";
+import rateLimit from "express-rate-limit";
 
 // importamos las rutas nuevas con metadata
 import authRoutes from "./routes/auth.routes.js";
@@ -49,6 +51,8 @@ server.use(
 
 // Configuramos morgan (ver las peticiones http en la terminal)
 server.use(morgan("dev"));
+
+server.use(generalLimiter);
 
 // Levantar servidor
 server.listen(port, () => {

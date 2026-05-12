@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { userController } from "../controllers/user.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
+import { loginLimiter } from "../middleware/rateLimit.middleware.js";
 
 const router = Router();
 const controller = new userController();
@@ -8,7 +9,7 @@ const controller = new userController();
 // rutas que no necesitan metadata
 
 // rutas publicas
-router.post('/login', controller.login);
+router.post('/login', loginLimiter, controller.login);
 router.post('/register', controller.register);
 
 // logout solo necesita estar logeado 
