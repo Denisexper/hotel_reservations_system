@@ -7,8 +7,7 @@ import { useNavigate } from "@solidjs/router";
 import { showToast } from "../utils/toast";
 import Pagination from "../components/Pagination";
 
-// URL base del backend para las imágenes
-const BACKEND_URL = "http://localhost:4000";
+import { backend_url as BACKEND_URL } from '../services/Enviroments.service.js';
 
 // Estados de habitación
 const ROOM_STATUSES = ["disponible", "ocupada", "mantenimiento", "limpieza"];

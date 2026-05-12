@@ -7,7 +7,7 @@ import PublicLayout from "../../components/public/PublicLayout";
 import Pagination from "../../components/Pagination";
 import LoyaltyCard from "../../components/public/LoyaltyCard";
 
-const BACKEND_URL = "http://localhost:4000";
+import { backend_url as BACKEND_URL } from '../../services/Enviroments.service.js';
 
 const STATUS_INFO = {
     pendiente: { label: "Pendiente", color: "bg-amber-100 text-amber-700", dot: "bg-amber-500" },

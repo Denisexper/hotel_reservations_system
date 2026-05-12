@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import PublicLayout from "../../components/public/PublicLayout";
 import Pagination from "../../components/Pagination";
 
-const BACKEND_URL = "http://localhost:4000";
+import { backend_url as BACKEND_URL } from '../../services/Enviroments.service.js';
 
 const PLACEHOLDER_IMAGES = {
     Simple: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&h=400&fit=crop",

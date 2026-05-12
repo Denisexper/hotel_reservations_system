@@ -4,7 +4,7 @@ import { createSignal, onMount, onCleanup, Show } from "solid-js";
 import hotelLogo from "../../assets/hotel_icon.png";
 import LoyaltyBadge from "./LoyaltyBadge";
 
-const BACKEND_URL = "http://localhost:4000";
+import { backend_url as BACKEND_URL } from '../../services/Enviroments.service.js';
 
 function PublicLayout(props) {
     const auth = useAuth();

@@ -3,7 +3,7 @@ import { useNavigate } from "@solidjs/router";
 import { api } from "../../services/api";
 import PublicLayout from "../../components/public/PublicLayout";
 
-const BACKEND_URL = "http://localhost:4000";
+import { backend_url as BACKEND_URL } from '../../services/Enviroments.service.js';
 
 const TYPE_DESCRIPTIONS = {
     Simple: "Perfecta para viajeros de negocios. Comodidad y funcionalidad en un espacio acogedor.",

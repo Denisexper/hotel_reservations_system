@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { showToast } from "../../utils/toast";
 import PublicLayout from "../../components/public/PublicLayout";
 
-const BACKEND_URL = "http://localhost:4000";
+import { backend_url as BACKEND_URL } from '../../services/Enviroments.service.js';
 
 const PLACEHOLDER_IMAGES = {
     Simple: "https://placehold.co/1200x800/1a1a2e/c9a84c?text=Simple",

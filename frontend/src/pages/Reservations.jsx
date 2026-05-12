@@ -7,7 +7,7 @@ import { useNavigate } from "@solidjs/router";
 import { showToast } from "../utils/toast";
 import Pagination from "../components/Pagination";
 
-const BACKEND_URL = "http://localhost:4000";
+import { backend_url as BACKEND_URL } from '../services/Enviroments.service.js';
 
 const RESERVATION_STATUSES = [
   { value: "pendiente", label: "Pendiente", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400" },

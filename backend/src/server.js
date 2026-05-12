@@ -1,5 +1,5 @@
 import express from "express";
-import { port } from "./services/Enviroments.service.js";
+import { port, frontend_url } from "./services/Enviroments.service.js";
 import { mongoConnect } from "./db/config.js";
 import morgan from "morgan";
 import cors from "cors";
@@ -44,7 +44,7 @@ server.use(express.json());
 // Configuración de cors
 server.use(
   cors({
-    origin: "http://localhost:3001",
+    origin: frontend_url,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),

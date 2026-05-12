@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:4000/api";
+import { api_url as API_URL } from './Enviroments.service.js';
 
 class ApiService {
   constructor() {
