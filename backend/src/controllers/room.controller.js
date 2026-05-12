@@ -1,5 +1,6 @@
 import { Room } from "../models/room.model.js";
-import mongoose from "mongoose";
+import fs from "fs";
+import path from "path";
 
 export class RoomController {
     // obtener todas las habitaciones con filtros y paginación
@@ -124,7 +125,7 @@ export class RoomController {
             }
 
             // Si intenta poner disponible, verificar que no tenga tickets abiertos
-            if (updateData.status === 'disponible', 'ocupada') {
+            if (updateData.status === 'disponible' || updateData.status === 'ocupada') {
                 const { MaintenanceLog } = await import('../models/maintenanceLog.model.js');
                 const openTickets = await MaintenanceLog.countDocuments({
                     room: id,
