@@ -6,6 +6,7 @@ import cors from "cors";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { startReminderCron } from "./services/reminder.cron.js";
 import { startNoShowCron } from "./services/noshow.cron.js";
+import { startDayPassCron } from "./services/daypass.cron.js";
 import { generalLimiter } from "./middleware/rateLimit.middleware.js";
 import rateLimit from "express-rate-limit";
 
@@ -68,6 +69,7 @@ mongoConnect().then(async () => {
   // Iniciar crons
   startReminderCron();
   startNoShowCron();
+  startDayPassCron();
   
   console.log("MongoDB conectado");
 
