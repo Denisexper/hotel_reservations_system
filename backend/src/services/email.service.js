@@ -392,4 +392,43 @@ export const sendWelcomeEmail = async ({ to, clientName, tempPassword }) => {
     });
 };
 
+// Email de no-show
+export const sendNoShowEmail = async ({ to, clientName, reservation, cancellationFee }) => {
+    const content = `
+        <h2>🚫 No-Show Registrado</h2>
+        <p>Hola <strong>${clientName}</strong>,</p>
+        <p>Tu reserva ha sido marcada como <strong>no-show</strong> porque no se registró llegada en la fecha acordada.</p>
+
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Código:</span>
+                <span class="info-value">${reservation.reservationCode}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Habitación:</span>
+                <span class="info-value">${reservation.room?.roomNumber || 'N/A'} - ${reservation.room?.type || ''}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Check-In programado:</span>
+                <span class="info-value">${new Date(reservation.checkIn).toLocaleDateString('es-ES')} a las 3:00 PM</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Penalización (100%):</span>
+                <span class="info-value" style="color: #dc3545;">$${cancellationFee.toFixed(2)}</span>
+            </div>
+        </div>
+
+        <p><span class="badge badge-danger">Penalización del 100% aplicada por no presentarse</span></p>
+
+        <p style="color: #666; font-size: 14px;">Si crees que esto es un error, comunícate con recepción a la brevedad.</p>
+    `;
+
+    await transporter.sendMail({
+        from: `"Hotel Reservations" <${email_user}>`,
+        to,
+        subject: `🚫 No-Show Registrado - ${reservation.reservationCode}`,
+        html: baseTemplate(content)
+    });
+};
+
 export default transporter;

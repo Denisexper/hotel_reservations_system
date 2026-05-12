@@ -5,6 +5,7 @@ import morgan from "morgan";
 import cors from "cors";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { startReminderCron } from "./services/reminder.cron.js";
+import { startNoShowCron } from "./services/noshow.cron.js";
 
 // importamos las rutas nuevas con metadata
 import authRoutes from "./routes/auth.routes.js";
@@ -60,8 +61,9 @@ server.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Configuración base de datos
 mongoConnect().then(async () => {
 
-  // Iniciar cron de recordatorios
+  // Iniciar crons
   startReminderCron();
+  startNoShowCron();
   
   console.log("MongoDB conectado");
 

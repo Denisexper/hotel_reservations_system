@@ -15,6 +15,7 @@ const RESERVATION_STATUSES = [
   { value: "check-in", label: "Check-In", color: "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400" },
   { value: "check-out", label: "Check-Out", color: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400" },
   { value: "cancelada", label: "Cancelada", color: "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400" },
+  { value: "no-show", label: "No-Show", color: "bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400" },
 ];
 
 const PAYMENT_METHODS = [
@@ -602,7 +603,7 @@ function Reservations() {
                               <td class="px-6 py-4">
                                 <div class="flex items-center gap-2 justify-end flex-wrap">
                                   <button onClick={() => openDetail(res)} class="text-xs px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 transition-colors">Detalle</button>
-                                  <Show when={res.paymentStatus === "pendiente" && res.status !== "cancelada" && auth.hasPermission("payments.create")}>
+                                  <Show when={res.paymentStatus === "pendiente" && !["cancelada", "no-show"].includes(res.status) && auth.hasPermission("payments.create")}>
                                     <button onClick={() => openPaymentModal(res)} class="text-xs px-3 py-1.5 rounded-md border border-green-200 dark:border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors">Pagar</button>
                                   </Show>
                                   <Show when={res.status === "confirmada" && res.paymentStatus === "pagado" && auth.hasPermission("reservations.checkin")}>
@@ -611,7 +612,7 @@ function Reservations() {
                                   <Show when={res.status === "check-in" && auth.hasPermission("reservations.checkout")}>
                                     <button onClick={() => handleCheckOut(res)} class="text-xs px-3 py-1.5 rounded-md border border-purple-200 dark:border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors">Check-out</button>
                                   </Show>
-                                  <Show when={!["cancelada", "check-out", "check-in"].includes(res.status) && auth.hasPermission("reservations.update")}>
+                                  <Show when={!["cancelada", "check-out", "check-in", "no-show"].includes(res.status) && auth.hasPermission("reservations.update")}>
                                     <button onClick={() => openCancelModal(res)} class="text-xs px-3 py-1.5 rounded-md border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">Cancelar</button>
                                   </Show>
                                 </div>
@@ -701,7 +702,7 @@ function Reservations() {
                               <Show when={r.createdBy}><p class="text-gray-500 dark:text-gray-400">Creada por:</p><p class="text-gray-900 dark:text-white">{r.createdBy?.name}</p></Show>
                             </div>
                           </div>
-                          <Show when={r.status === "cancelada"}>
+                          <Show when={["cancelada", "no-show"].includes(r.status)}>
                             <div class="card border-l-4 border-l-red-500">
                               <p class="text-xs font-semibold text-red-600 dark:text-red-400 uppercase mb-2">Cancelación</p>
                               <p class="text-sm text-gray-700 dark:text-gray-300">{r.cancellationReason || "Sin motivo"}</p>
@@ -732,7 +733,7 @@ function Reservations() {
                             </div>
                           </Show>
                           <div class="flex gap-2 flex-wrap pt-2">
-                            <Show when={r.paymentStatus === "pendiente" && r.status !== "cancelada" && auth.hasPermission("payments.create")}>
+                            <Show when={r.paymentStatus === "pendiente" && !["cancelada", "no-show"].includes(r.status) && auth.hasPermission("payments.create")}>
                               <button onClick={() => { setShowDetail(false); openPaymentModal(r); }} class="btn-primary">Registrar Pago</button>
                             </Show>
                             <Show when={r.status === "confirmada" && r.paymentStatus === "pagado" && auth.hasPermission("reservations.checkin")}>
@@ -741,7 +742,7 @@ function Reservations() {
                             <Show when={r.status === "check-in" && auth.hasPermission("reservations.checkout")}>
                               <button onClick={() => handleCheckOut(r)} class="btn-primary">Check-out</button>
                             </Show>
-                            <Show when={!["cancelada", "check-out", "check-in"].includes(r.status) && auth.hasPermission("reservations.update")}>
+                            <Show when={!["cancelada", "check-out", "check-in", "no-show"].includes(r.status) && auth.hasPermission("reservations.update")}>
                               <button onClick={() => { setShowDetail(false); openCancelModal(r); }} class="btn-secondary text-red-600 dark:text-red-400">Cancelar Reserva</button>
                             </Show>
                           </div>

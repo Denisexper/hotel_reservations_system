@@ -15,6 +15,7 @@ const STATUS_INFO = {
     "check-in": { label: "Check-In", color: "bg-green-100 text-green-700", dot: "bg-green-500" },
     "check-out": { label: "Check-Out", color: "bg-gray-100 text-gray-600", dot: "bg-gray-400" },
     cancelada: { label: "Cancelada", color: "bg-red-100 text-red-700", dot: "bg-red-500" },
+    "no-show": { label: "No-Show", color: "bg-orange-100 text-orange-700", dot: "bg-orange-500" },
 };
 
 const PAYMENT_METHODS = [
@@ -343,7 +344,7 @@ function ClientReservations() {
                                                                 >
                                                                     Ver Detalle
                                                                 </button>
-                                                                <Show when={res.paymentStatus === "pendiente" && res.status !== "cancelada"}>
+                                                                <Show when={res.paymentStatus === "pendiente" && !["cancelada", "no-show"].includes(res.status)}>
                                                                     <button
                                                                         onClick={() => openPayment(res)}
                                                                         class="px-4 py-1.5 text-xs font-medium text-white bg-[#c9a84c] hover:bg-[#b8963f] rounded-lg transition-colors"
@@ -351,7 +352,7 @@ function ClientReservations() {
                                                                         Pagar
                                                                     </button>
                                                                 </Show>
-                                                                <Show when={!["cancelada", "check-out", 'check-in'].includes(res.status)}>
+                                                                <Show when={!["cancelada", "check-out", "check-in", "no-show"].includes(res.status)}>
                                                                     <button
                                                                         onClick={() => openCancel(res)}
                                                                         class="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
@@ -467,7 +468,7 @@ function ClientReservations() {
                                                 </div>
 
                                                 {/* Cancellation */}
-                                                <Show when={res.status === "cancelada"}>
+                                                <Show when={["cancelada", "no-show"].includes(res.status)}>
                                                     <div class="p-4 bg-red-50 rounded-xl border border-red-100">
                                                         <p class="text-xs font-semibold text-red-700 uppercase mb-1">Cancelación</p>
                                                         <p class="text-sm text-red-600">{res.cancellationReason || "Sin motivo"}</p>
@@ -512,7 +513,7 @@ function ClientReservations() {
 
                                                 {/* Actions */}
                                                 <div class="flex gap-2 pt-2">
-                                                    <Show when={res.paymentStatus === "pendiente" && res.status !== "cancelada"}>
+                                                    <Show when={res.paymentStatus === "pendiente" && !["cancelada", "no-show"].includes(res.status)}>
                                                         <button
                                                             onClick={() => { setShowDetail(false); openPayment(res); }}
                                                             class="flex-1 py-3 bg-[#c9a84c] hover:bg-[#b8963f] text-white rounded-lg text-sm font-medium transition-colors"
@@ -520,7 +521,7 @@ function ClientReservations() {
                                                             Pagar Ahora
                                                         </button>
                                                     </Show>
-                                                    <Show when={!["cancelada", "check-out"].includes(res.status)}>
+                                                    <Show when={!["cancelada", "check-out", "no-show"].includes(res.status)}>
                                                         <button
                                                             onClick={() => { setShowDetail(false); openCancel(res); }}
                                                             class="flex-1 py-3 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"

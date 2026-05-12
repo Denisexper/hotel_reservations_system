@@ -65,7 +65,7 @@ const reservationSchema = new Schema({
         type: String,
         required: true,
         enum: {
-            values: ['pendiente', 'confirmada', 'check-in', 'check-out', 'cancelada'],
+            values: ['pendiente', 'confirmada', 'check-in', 'check-out', 'cancelada', 'no-show'],
             message: '{VALUE} no es un estado válido'
         },
         default: 'pendiente'
