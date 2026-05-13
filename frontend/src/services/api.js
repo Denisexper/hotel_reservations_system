@@ -607,6 +607,10 @@ class ApiService {
     });
   }
 
+  async getRecentClients() {
+    return this.request(`/users/clients/recent`);
+  }
+
   async searchClients(query) {
     return this.request(`/users/clients/search?q=${encodeURIComponent(query)}`);
   }

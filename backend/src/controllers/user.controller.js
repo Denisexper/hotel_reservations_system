@@ -4,6 +4,7 @@ import { generateToken } from "../services/jwt.service.js";
 import mongoose from "mongoose";
 import { Log } from "../models/logs.model.js";
 import { Role } from "../models/role.model.js";
+import { Reservation } from "../models/reservation.model.js";
 
 export class userController {
   //register
@@ -597,6 +598,40 @@ export class userController {
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
+    }
+  }
+
+  // Clientes recientes (últimos 6 con reserva)
+  async getRecentClients(req, res) {
+    try {
+      const limit = 6;
+
+      const recentReservations = await Reservation.find()
+        .sort({ createdAt: -1 })
+        .select('client')
+        .limit(100);
+
+      const seenIds = new Set();
+      const uniqueClientIds = [];
+      for (const r of recentReservations) {
+        const id = r.client.toString();
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          uniqueClientIds.push(r.client);
+        }
+        if (uniqueClientIds.length === limit) break;
+      }
+
+      const clients = await userModel.find({ _id: { $in: uniqueClientIds }, isActive: true })
+        .select('name email phone documentType documentNumber');
+
+      // Preservar orden de recencia
+      const clientMap = new Map(clients.map(c => [c._id.toString(), c]));
+      const ordered = uniqueClientIds.map(id => clientMap.get(id.toString())).filter(Boolean);
+
+      res.status(200).json({ msj: "Clientes recientes", data: ordered });
+    } catch (error) {
+      res.status(500).json({ msj: "Error al obtener clientes recientes", error: error.message });
     }
   }
 

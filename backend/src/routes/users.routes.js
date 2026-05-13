@@ -27,6 +27,14 @@ const routes = [
     },
     {
         method: 'GET',
+        path: '/users/clients/recent',
+        permission: 'reservations.create_others',
+        description: 'Clientes recientes para asignar reserva',
+        handler: controller.getRecentClients,
+        middlewares: []
+    },
+    {
+        method: 'GET',
         path: '/users/clients/search',
         permission: 'reservations.create_others',
         description: 'Buscar clientes para asignar reserva',

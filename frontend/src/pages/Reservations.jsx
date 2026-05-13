@@ -145,6 +145,8 @@ function Reservations() {
   const [clientSearchQuery, setClientSearchQuery] = createSignal("");
   const [clientSearchResults, setClientSearchResults] = createSignal([]);
   const [clientSearching, setClientSearching] = createSignal(false);
+  const [recentClients, setRecentClients] = createSignal([]);
+  const [showingRecents, setShowingRecents] = createSignal(false);
   const [selectedClient, setSelectedClient] = createSignal(null);
   const [showClientDropdown, setShowClientDropdown] = createSignal(false);
   const [specialRequests, setSpecialRequests] = createSignal("");
@@ -186,10 +188,12 @@ function Reservations() {
 
     if (query.length < 2) {
       setClientSearchResults([]);
-      setShowClientDropdown(false);
+      setShowingRecents(false);
+      setShowClientDropdown(recentClients().length > 0 && query.length === 0);
       return;
     }
 
+    setShowingRecents(false);
     searchTimeout = setTimeout(async () => {
       setClientSearching(true);
       try {
@@ -203,17 +207,40 @@ function Reservations() {
     }, 300);
   };
 
+  const handleClientFocus = async () => {
+    if (clientSearchQuery().length > 0) {
+      if (clientSearchResults().length > 0) setShowClientDropdown(true);
+      return;
+    }
+    if (recentClients().length > 0) {
+      setShowingRecents(true);
+      setShowClientDropdown(true);
+      return;
+    }
+    try {
+      const result = await api.getRecentClients();
+      const data = result.data || [];
+      setRecentClients(data);
+      if (data.length > 0) {
+        setShowingRecents(true);
+        setShowClientDropdown(true);
+      }
+    } catch (_) {}
+  };
+
   const selectClient = (client) => {
     setSelectedClient(client);
     setClientSearchQuery(client.name);
     setShowClientDropdown(false);
     setClientSearchResults([]);
+    setShowingRecents(false);
   };
 
   const clearSelectedClient = () => {
     setSelectedClient(null);
     setClientSearchQuery("");
     setClientSearchResults([]);
+    setShowingRecents(false);
   };
 
   // Registrar cliente nuevo
@@ -901,14 +928,17 @@ function Reservations() {
                             placeholder="Buscar cliente por nombre, email o DUI..."
                             value={clientSearchQuery()}
                             onInput={(e) => handleClientSearch(e.target.value)}
-                            onFocus={() => clientSearchResults().length > 0 && setShowClientDropdown(true)}
+                            onFocus={handleClientFocus}
                           />
                         </div>
 
                         {/* Dropdown de resultados */}
-                        <Show when={showClientDropdown() && clientSearchResults().length > 0}>
-                          <div class="mt-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
-                            <For each={clientSearchResults()}>
+                        <Show when={showClientDropdown() && (clientSearchResults().length > 0 || showingRecents())}>
+                          <div class="mt-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+                            <Show when={showingRecents()}>
+                              <p class="px-4 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide bg-gray-50 dark:bg-gray-800/50">Recientes</p>
+                            </Show>
+                            <For each={showingRecents() ? recentClients() : clientSearchResults()}>
                               {(client) => (
                                 <button
                                   onClick={() => selectClient(client)}
