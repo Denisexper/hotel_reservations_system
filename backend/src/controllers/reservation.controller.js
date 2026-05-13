@@ -273,7 +273,7 @@ export class ReservationController {
                 const isAvailable = await Reservation.checkAvailability(existingReservation.room, start.toDate(), end.toDate(), id);
                 if (!isAvailable) return res.status(409).json({ msj: "Conflicto de fechas con otra reserva" });
 
-                let nights = dayjs(checkOut).startOf('day').diff(dayjs(checkIn).startOf('day'), 'day');
+                let nights = dayjs(checkOut || existingReservation.checkOut).startOf('day').diff(dayjs(checkIn || existingReservation.checkIn).startOf('day'), 'day');
                 if (nights <= 0) nights = 1;
 
                 updateData.checkIn = start.toDate();
