@@ -132,6 +132,10 @@ export class ReservationController {
                 return res.status(404).json({ msj: "Habitación no disponible" });
             }
 
+            if (roomData.status !== 'disponible') {
+                return res.status(409).json({ msj: `Habitación no disponible: estado actual "${roomData.status}"` });
+            }
+
             if (numberOfGuests > roomData.capacity) {
                 return res.status(400).json({ msj: `Capacidad máxima: ${roomData.capacity} personas` });
             }
