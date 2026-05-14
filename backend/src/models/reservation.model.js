@@ -166,8 +166,7 @@ reservationSchema.methods.calculateDays = function() {
 
 // Método de instancia: Calcular penalización por cancelación
 reservationSchema.methods.calculateCancellationFee = function() {
-    const now = new Date();
-    const daysUntilCheckIn = Math.floor((this.checkIn - now) / (1000 * 60 * 60 * 24));
+    const daysUntilCheckIn = Math.floor((this.checkIn.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     
     // Política de cancelación:
     // - Más de 7 días antes: sin penalización
