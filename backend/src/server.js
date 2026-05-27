@@ -64,34 +64,38 @@ server.listen(port, () => {
 server.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Configuración base de datos
-mongoConnect().then(async () => {
+mongoConnect()
+  .then(async () => {
+    console.log("MongoDB conectado");
 
-  // Iniciar crons
-  startReminderCron();
-  startNoShowCron();
-  startDayPassCron();
-  
-  console.log("MongoDB conectado");
+    // Iniciar crons
+    startReminderCron();
+    startNoShowCron();
+    startDayPassCron();
 
-  // Auto-descubrir y sincronizar permisos
-  await seedPermissions([
-    userRoutesMetadata,
-    roleRoutesMetadata,
-    logRoutesMetadata,
-    roomsRoutesMetadata,
-    reservationRoutesMetadata,
-    paymentRoutesMetadata,
-    seasonalPriceRoutesMetadata,
-    maintenanceRoutesMetadata,
-    dashboardRoutesMetadata,
-    dayPassRoutesMetadata,
-    catalogRoutesMetadata,
-  ]);
+    // Auto-descubrir y sincronizar permisos
+    await seedPermissions([
+      userRoutesMetadata,
+      roleRoutesMetadata,
+      logRoutesMetadata,
+      roomsRoutesMetadata,
+      reservationRoutesMetadata,
+      paymentRoutesMetadata,
+      seasonalPriceRoutesMetadata,
+      maintenanceRoutesMetadata,
+      dashboardRoutesMetadata,
+      dayPassRoutesMetadata,
+      catalogRoutesMetadata,
+    ]);
 
-  // Crear roles del sistema (solo si no existen)
-  console.log("🌱 Creando roles del sistema...");
-  await seedRoles();
-});
+    // Crear roles del sistema (solo si no existen)
+    console.log("🌱 Creando roles del sistema...");
+    await seedRoles();
+  })
+  .catch((error) => {
+    console.error("❌ Error fatal al conectar con MongoDB:", error.message);
+    process.exit(1);
+  });
 
 // Inicializar rutas
 // Rutas de autenticación (públicas)
