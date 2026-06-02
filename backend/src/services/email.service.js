@@ -353,7 +353,7 @@ export const sendDayPassConfirmation = async ({ to, visitorName, dayPass }) => {
 
 // Email de bienvenida con credenciales temporales
 export const sendWelcomeEmail = async ({ to, clientName, tempPassword }) => {
-    const loginUrl = `${frontend_url}/login`;
+    const loginUrl = `${frontend_url}/client-login`;
 
     const content = `
         <h2>👋 ¡Bienvenido a Hotel Reservations!</h2>
